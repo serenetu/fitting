@@ -17,7 +17,6 @@ import os
 import shutil
 import time
 
-
 class mix_exact_sub_sloppy:
 
     '''
@@ -258,6 +257,114 @@ class Extract_VEC:
         for wrong in wrong_config:
             print wrong
 
+    def check_Size_Date(self, folder, size):
+
+        '''
+        Check Size and Compare Date of the files under the folder
+        :param folder:
+        :param size:
+        :return: True/False: have/no such file, and give file name if True
+        '''
+
+        conf_num = folder.split(".")[-1]
+        filelist = (src.func.walkfiles(self.path + '/' + folder, prt=0))[1]
+        ama_time_old = 0
+        out_ama_num = 0
+        for file in filelist:
+            if ('out-ama' in file) & (('.' + conf_num + '.') in file):
+                out_ama_time = os.path.getmtime(self.path + '/' + folder + '/' + file)
+                out_ama_size = os.path.getsize(self.path + '/' + folder + '/' + file)
+                if (out_ama_size > size) & (out_ama_time > ama_time_old):
+                    out_ama_num = 1
+                    file_out_ama = file
+                    ama_time_old = out_ama_time
+        if (out_ama_num == 1):
+            return True, file_out_ama
+        else:
+            return False, False
+
+    def check_Complete(self, FullFilePath):
+
+        '''
+        Check if the file contain all Exact Sub and AMA values
+        BY SIMPLY CHECK THE FIRST TWO 'src_global_xyzt' LINES. ONLY t CHANGE IN FIRST TWO LINES WILL BE ACCEPTED
+        :return:
+        '''
+
+        file = open(FullFilePath)
+        linenum = 0
+        s_x = 0
+        s_y = 0
+        s_z = 0
+        s_t = 0
+        for line in file:
+            if 'src_global_xyzt' in line:
+                s_x_last = s_x
+                s_y_last = s_y
+                s_z_last = s_z
+                s_t_last = s_t
+                linenum += 1
+                src_global_xyzt = line.split()
+                s_x = src_global_xyzt[1]
+                s_y = src_global_xyzt[2]
+                s_z = src_global_xyzt[3]
+                s_t = src_global_xyzt[4]
+                if linenum == 1:
+                    s_x_last = s_x
+                    s_y_last = s_y
+                    s_z_last = s_z
+                    s_t_last = s_t
+                if linenum == 2:
+                    if (s_x_last == s_x) & (s_y_last == s_y) & (s_z_last == s_z):
+                        return True
+                    else:
+                        print 'Not Complete:'
+                        print FullFilePath
+                        return False
+
+    def run_check_Size_Date_Complete(self):
+
+        '''
+        First check check_Complete
+        Read and write 'VEC' lines
+        :return: NA
+        '''
+
+        right_config_num = 0
+        for folder in self.folderlist:
+            if (self.ensemble in folder) & ('t' in folder):
+                checkres1 = self.check_Size_Date(folder, 10.0 ** 7.0)
+
+                if checkres1[0]:
+
+                    checkres2 = self.check_Complete(self.path + '/' + folder + '/' + checkres1[1])
+
+                    if checkres2:
+
+                        conf_num = folder.split(".")[-1]
+                        right_config_num += 1
+
+                        file = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+
+                        data_out_ama_read = open(self.path + '/' + folder + '/' + checkres1[1])
+
+                        num_src_global_xyzt_out_ama = 0
+
+                        for lines in data_out_ama_read.readlines():
+                            if 'src_global_xyzt' in lines:
+                                num_src_global_xyzt_out_ama += 1
+                            if 'VEC' in lines:
+                                file.write(lines)
+
+                        file.close()
+                        print 'create ' + self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
+                        print 'num_src_global_xyzt_out_ama: ' + str(num_src_global_xyzt_out_ama)
+                        data_out_ama_read.close()
+                    else:
+                        conf_num = folder.split(".")[-1]
+                        file = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+                        file.close()
+
 
 
 '''
@@ -271,7 +378,6 @@ l64 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ
 l64.run()
 '''
 
-'''
+
 l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
-l48.run()
-'''
+l48.run_check_Size_Date_Complete()
