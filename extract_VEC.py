@@ -325,7 +325,7 @@ class Extract_VEC:
     def run_check_Size_Date_Complete(self):
 
         '''
-        First check check_Complete
+        First check Size_Date_Complete
         Read and write 'VEC' lines
         :return: NA
         '''
@@ -366,7 +366,6 @@ class Extract_VEC:
                         file.close()
 
 
-
 '''
 Mix_96 = mix_exact_sub_sloppy('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/')
 Mix_96.share_exact()
@@ -377,7 +376,6 @@ Mix_96.Combine_96()
 l64 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l64')
 l64.run()
 '''
-
 
 l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
 l48.run_check_Size_Date_Complete()
