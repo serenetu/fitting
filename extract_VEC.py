@@ -283,6 +283,34 @@ class Extract_VEC:
         else:
             return False, False
 
+    def check_Num_Size(self, folder, name):
+
+        '''
+        Check the Number of files named by 'name' under the folder
+        :param folder:
+        :param name:
+        :return:
+        '''
+
+        num1 = 0
+        num2 = 0
+        filename = []
+        filelist = (src.func.walkfiles(self.path + '/' + folder, prt=0))[1]
+        for file in filelist:
+            if name in file:
+                out_ama_size = os.path.getsize(self.path + '/' + folder + '/' + file)
+                if ((out_ama_size > 10.0 ** 6.0) and (out_ama_size < 10.0 ** 7.0)):
+                    num1 +=1
+                    filename.append(file)
+
+        for file in filelist:
+            if name in file:
+                out_ama_size = os.path.getsize(self.path + '/' + folder + '/' + file)
+                if (out_ama_size > 10.0 ** 7.0):
+                    num2 += 1
+                    filename.append(file)
+        return num1, num2, filename
+
     def check_Complete(self, FullFilePath):
 
         '''
@@ -318,8 +346,6 @@ class Extract_VEC:
                     if (s_x_last == s_x) & (s_y_last == s_y) & (s_z_last == s_z):
                         return True
                     else:
-                        print 'Not Complete:'
-                        print FullFilePath
                         return False
 
     def run_check_Size_Date_Complete(self):
@@ -331,6 +357,7 @@ class Extract_VEC:
         '''
 
         right_config_num = 0
+        NotCompleteList = []
         for folder in self.folderlist:
             if (self.ensemble in folder) & ('t' in folder):
                 checkres1 = self.check_Size_Date(folder, 10.0 ** 7.0)
@@ -361,9 +388,150 @@ class Extract_VEC:
                         print 'num_src_global_xyzt_out_ama: ' + str(num_src_global_xyzt_out_ama)
                         data_out_ama_read.close()
                     else:
+                        NotCompleteList.append(self.path + '/' + folder + '/' + checkres1[1])
                         conf_num = folder.split(".")[-1]
                         file = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
                         file.close()
+        #print out the 'Not Complete' List
+        print 'Not Complete:'
+        for list in NotCompleteList:
+            print list
+
+    def run_Num_Size(self):
+
+        '''
+        First Check the number of the 'out-ama' files
+        In l48, there are two situations (actually three, the last one is total no file):
+        1. Exact_Sub and AMA are separated (Size of E_S: 10^6-10^7, Size of AMA: >10^7)
+           I also need to check E_S is really E_S and AMA is really AMA by using check_Complete()
+        2. All of them are in one file (Size: >10^7)
+           The same, need to check_Complete()
+        :return:
+        '''
+
+        NotCompleteList = []
+        for folder in self.folderlist:
+            if (self.ensemble in folder) & ('t' in folder):
+                check_Num_Size = self.check_Num_Size(folder, 'out-ama')
+                print folder
+                print check_Num_Size
+
+                # All in one file
+                if (check_Num_Size[0] == 0) and (check_Num_Size[1] == 1):
+                    if self.check_Complete(self.path + '/' + folder + '/' + check_Num_Size[2][0]):
+                        num_src_global_xyzt_out_ama = 0
+                        conf_num = folder.split(".")[-1]
+                        fileread = open(self.path + '/' + folder + '/' + check_Num_Size[2][0])
+                        filewrite = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+                        for lines in fileread.readlines():
+                            if 'src_global_xyzt' in lines:
+                                num_src_global_xyzt_out_ama += 1
+                                filewrite.write(lines)
+                            if 'VEC' in lines:
+                                filewrite.write(lines)
+                        fileread.close()
+                        filewrite.close()
+                        print 'create ' + self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
+                        print 'num_src_global_xyzt_out_ama: ' + str(num_src_global_xyzt_out_ama)
+                    else:
+                        NotCompleteList.append(self.path + '/' + folder + '/')
+                        conf_num = folder.split(".")[-1]
+                        file = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+                        file.close()
+
+                # Exact_Sub and AMA are separated
+                elif (check_Num_Size[0] == 1) and (check_Num_Size[1] == 1):
+                    if self.check_Complete(self.path + '/' + folder + '/' + check_Num_Size[2][0]) and \
+                            (not self.check_Complete(self.path + '/' + folder + '/' + check_Num_Size[2][1])):
+                        conf_num = folder.split(".")[-1]
+                        num_src_global_xyzt_out_ama = 0
+                        fileread1 = open(self.path + '/' + folder + '/' + check_Num_Size[2][0])
+                        filewrite = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+                        for lines in fileread1.readlines():
+                            if 'src_global_xyzt' in lines:
+                                num_src_global_xyzt_out_ama += 1
+                                filewrite.write(lines)
+                            if 'VEC' in lines:
+                                filewrite.write(lines)
+                        fileread1.close()
+                        fileread2 = open(self.path + '/' + folder + '/' + check_Num_Size[2][1])
+                        for lines in fileread2.readlines():
+                            if 'src_global_xyzt' in lines:
+                                num_src_global_xyzt_out_ama += 1
+                                filewrite.write(lines)
+                            if 'VEC' in lines:
+                                filewrite.write(lines)
+                        fileread2.close()
+                        filewrite.close()
+                        print 'create ' + self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
+                        print 'num_src_global_xyzt_out_ama: ' + str(num_src_global_xyzt_out_ama)
+                    else:
+                        NotCompleteList.append(self.path + '/' + folder + '/')
+                        conf_num = folder.split(".")[-1]
+                        file = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+                        file.close()
+                else:
+                    NotCompleteList.append(self.path + '/' + folder + '/')
+                    conf_num = folder.split(".")[-1]
+                    file = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'w')
+                    file.close()
+
+        # print out the 'Not Complete' List
+        print 'Not Complete:'
+        for list in NotCompleteList:
+            print list
+
+    def Separate_E_S_A(self):
+
+        '''
+        Read in the files that contain all three Exact Sub AMA
+        And Write them into three files individually
+        :return:
+        '''
+
+        print 'Separate Exact Sub AMA:'
+        for folder in self.folderlist:
+            if (self.ensemble in folder) & ('t' in folder):
+                conf_num = folder.split(".")[-1]
+                if os.path.isfile(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num):
+                    if os.path.getsize(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num) != 0:
+                        vec_Exact = open(self.path + '/' + folder + '/' + 'vec_Exact' + '.' + conf_num, 'w')
+                        vec_Sub = open(self.path + '/' + folder + '/' + 'vec_Sub' + '.' + conf_num, 'w')
+                        vec_AMA = open(self.path + '/' + folder + '/' + 'vec_AMA' + '.' + conf_num, 'w')
+                        FileRead = open(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num, 'r')
+                        AllLines = FileRead.readlines()
+                        TotalLineNum = len(AllLines)
+                        LineNum = -1
+                        src_linenum = [] # The line number of the line with 'src_global_xyzt: 0 0 0 0'
+                        for lines in AllLines:
+                            LineNum += 1
+                            if 'src_global_xyzt: 0 0 0 0' in lines:
+                                src_linenum.append(LineNum)
+                        if len(src_linenum) == 3:
+                            for n in range(src_linenum[0], src_linenum[1]):
+                                if 'VEC' in AllLines[n]:
+                                    vec_Exact.write(AllLines[n])
+                            vec_Exact.close()
+                            print 'create ' + self.path + '/' + folder + '/' + 'vec_Exact' + '.' + conf_num
+                            for n in range(src_linenum[1], src_linenum[2]):
+                                if 'VEC' in AllLines[n]:
+                                    vec_Sub.write(AllLines[n])
+                            vec_Sub.close()
+                            print 'create ' + self.path + '/' + folder + '/' + 'vec_Sub' + '.' + conf_num
+                            for n in range(src_linenum[2], TotalLineNum):
+                                if 'VEC' in AllLines[n]:
+                                    vec_AMA.write(AllLines[n])
+                            vec_AMA.close()
+                            print 'create ' + self.path + '/' + folder + '/' + 'vec_AMA' + '.' + conf_num
+                            FileRead.close()
+                        else:
+                            print 'wrong config:'
+                            print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
+
+
+
+
+
 
 
 '''
@@ -378,4 +546,6 @@ l64.run()
 '''
 
 l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
-l48.run_check_Size_Date_Complete()
+#l48.run_check_Size_Date_Complete()
+l48.run_Num_Size()
+l48.Separate_E_S_A()

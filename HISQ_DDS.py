@@ -590,6 +590,19 @@ Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/c_64').output(
 missing.close()
 '''
 
+class do_48:
+    def __init__(self):
+        self.path = '/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ'
+        self.L = [48, 48, 48, 144]
+
+    def runTimeSlices(self):
+        print 'Reading TimeSlice'
+        read_t = read_dds_files(self.path, 'vec', self.L, 'TimeSlice')
+        read_t.read_allconfig()
+        qsqu = Make_qsqu(1, 1, 1, 30, self.L)
+        pi_matrix = Make_Pi_matrix(qsqu.qsqu, read_t.Cmunu_Configs, self.L[3])
+        Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/Fitting/results/64c fitting/c_64_t').output()
+
 class do_64:
     def __init__(self):
         self.path = '/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ'
