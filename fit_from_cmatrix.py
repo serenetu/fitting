@@ -213,8 +213,31 @@ class fit64:
             print 'g-2 (from 0.1 to 4*ainv):'
             print (quad(lambda x: comb_func((fittingfunc.res.x), x,  self.alpha, self.mu, 'DDS'), 0.1, 4*self.ainv))[0]
 
-start = fit64()
-start.run()
+class fit48:
+    def __init__(self):
+        self.mu = 0.1056583715
+        self.ainv = 3.486342381540
+        self.alpha = 1.0 / 137.035999074
+        self.charge_cor = 1.0
+        self.fitting_points = [4, 5, 6, 7, 8, 9, 10]
+        self.delitem = []
+        self.patht = '/Users/tucheng/Desktop/Fitting/results/64c fitting/c_64_t'
+        self.parameters_guess = np.array([ 0.09495962,  0.64574499, 0])
+        self.cmatrix_filet = read_cmatrix_file(self.patht)
+        self.cmatrix_filet.qsqu_all = self.ainv ** 2.0 * self.cmatrix_filet.qsqu_all
+        self.cmatrix_filet.plots(10, typ='.r')
+        plt.show()
+    def run(self):
+        for points_num in self.fitting_points:
+            self.cmatrix_filet.split_qsqu_pi_qsqu_avg_c_matrix(points_num)
+            fittingfunc = fitting(self.cmatrix_filet.qsqu, self.cmatrix_filet.pi_qsqu, self.cmatrix_filet.cmatrix,
+                                  self.parameters_guess, 'DDS')
+            fittingfunc.fitting_output()
+            print 'g-2 (from 0.1 to 4*ainv):'
+            print (quad(lambda x: comb_func((fittingfunc.res.x), x,  self.alpha, self.mu, 'DDS'), 0.1, 4*self.ainv))[0]
+
+start = fit48()
+#start.run()
 
 '''
 #fit

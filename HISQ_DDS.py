@@ -76,6 +76,36 @@ def Avg_Same(vector, matrix):
     matrix_same[-1] = matrix_same[-1] / num_same
     return np.array(vector_same), np.array(matrix_same)
 
+def SortAvg(Vec, Mtx):
+    vector = np.array(Vec)
+    matrix = np.array(Mtx)
+
+    index = np.argsort(vector)
+
+    vector = vector[index]
+    matrix = matrix[index]
+
+    line_num = len(vector)
+    num_same = 1
+    vector_same = []
+    matrix_same = []
+    vector_same.append(vector[0])
+    matrix_same.append(matrix[0])
+    ii = 0
+
+    for i in range(1, line_num):
+        if vector[i] == vector[i - 1]:
+            matrix_same[ii] = np.array(matrix_same[ii]) + np.array(matrix[i])
+            num_same += 1
+        else:
+            matrix_same[ii] = matrix_same[ii] / num_same
+            vector_same.append(vector[i])
+            matrix_same.append(matrix[i])
+            num_same = 1
+            ii += 1
+    matrix_same[-1] = matrix_same[-1] / num_same
+    return np.array(vector_same), np.array(matrix_same)
+
 class read_dds_files:
     def __init__(self, HISQpath, filename, l, Type):
         self.HISQpath = HISQpath
@@ -118,7 +148,7 @@ class read_dds_files:
         file.write(str(self.linenum))
         file.close()
 
-    def read_file_samemu(self, path, mu, slice):
+    def read_file_samemu_AllInOne(self, path, mu, slice):
 
         '''read a specific file line by line
 
@@ -259,6 +289,24 @@ class read_dds_files:
             print 'warning'
             exit()
 
+    def ReadFileSamemu(self, path, mu, slice):
+        data = open(path)
+        t = []
+        real = []
+        for line in data.readlines():
+            if slice in line:
+                if not 'CONTACT' in line:
+                    linesplit = line.split()
+                    mu_line = int(linesplit[4])
+                    nu_line = int(linesplit[6])
+
+                    if (mu_line in mu) & (nu_line in mu) & (mu_line == nu_line):
+                        t.append(int((int(linesplit[8]) - int(linesplit[2]) + self.TMAX) % self.TMAX))
+                        real.append(float(linesplit[9]))
+        difft, self.Cmunu = SortAvg(t, real)
+
+
+
     def print_raw(self):
         print '##############################################################################'
         # print 'Exact_num, appx_num, appx_avg_num:'
@@ -284,7 +332,7 @@ class read_dds_files:
         data = data.readlines()
         return True if (len(data) == num) else False
 
-    def read_allconfig(self):
+    def read_allconfig_AllInOne(self):
         self.Cmunu_Configs = []
         self.conf_num_list = []
         i = 0
@@ -298,7 +346,7 @@ class read_dds_files:
                         self.conf_num_list.append(int(self.conf_num))
                         print 'Read File: ' + self.fullpath
 
-                        self.read_file_samemu(self.fullpath, [0, 1, 2], 'VEC-CORR')\
+                        self.read_file_samemu_AllInOne(self.fullpath, [0, 1, 2], 'VEC-CORR')\
 
                         self.Cmunu_Configs.append(self.Cmunu)
 
@@ -313,6 +361,32 @@ class read_dds_files:
             order_by_Column(Mix_Vec_Matx(self.conf_num_list, self.Cmunu_Configs), 0))
 
         self.conf_num_list, self.Cmunu_Configs = Avg_Same(self.conf_num_list, self.Cmunu_Configs)
+
+        return self.Cmunu_Configs
+
+    def ReadAllconfig(self):
+        self.Cmunu_Configs = []
+        self.conf_num_list = []
+        i = 0
+        folderlist = (src.func.walkfiles(self.HISQpath, prt=0))[0]
+        for self.folder in folderlist:
+            if ('l' + str(self.l)) in self.folder:
+                conf_num = self.folder.split(".")[-1]
+                self.fullpath = self.HISQpath + '/' + self.folder + '/' + self.filename + '.' + conf_num
+                if os.path.exists(self.fullpath):
+                    if os.path.getsize(self.fullpath) != 0:
+                        self.conf_num_list.append(int(conf_num))
+                        print 'Read File: ' + self.fullpath
+
+                        self.ReadFileSamemu(self.fullpath, [0, 1, 2], 'VEC-CORR')
+
+                        self.Cmunu_Configs.append(self.Cmunu)
+
+                        i += 1
+
+        self.Cmunu_Configs = np.array(self.Cmunu_Configs)
+
+        self.conf_num_list, self.Cmunu_Configs = SortAvg(self.conf_num_list, self.Cmunu_Configs)
 
         return self.Cmunu_Configs
 
@@ -331,7 +405,7 @@ class read_dds_files:
                         if self.check_linenum(self.fullpath, Line_Right):
                             self.conf_num_list.append(int(self.conf_num))
 
-                            self.read_file_samemu(self.fullpath, [0, 1, 2], 'VEC-CORRt')
+                            self.read_file_samemu_AllInOne(self.fullpath, [0, 1, 2], 'VEC-CORRt')
 
                             self.Cmunu_Configs.append(self.Cmunu)
                         else:
@@ -368,17 +442,17 @@ class read_dds_files:
 
 
                             self.conf_num_list.append(int(self.conf_num))
-                            self.read_file_samemu(self.fullpath, [1, 2, 3], 'VEC-CORRx')
+                            self.read_file_samemu_AllInOne(self.fullpath, [1, 2, 3], 'VEC-CORRx')
                             self.Cmunu_Configs.append(self.Cmunu)
 
 
                             self.conf_num_list.append(int(self.conf_num))
-                            self.read_file_samemu(self.fullpath, [0, 2, 3], 'VEC-CORRy')
+                            self.read_file_samemu_AllInOne(self.fullpath, [0, 2, 3], 'VEC-CORRy')
                             self.Cmunu_Configs.append(self.Cmunu)
 
 
                             self.conf_num_list.append(int(self.conf_num))
-                            self.read_file_samemu(self.fullpath, [0, 1, 3], 'VEC-CORRz')
+                            self.read_file_samemu_AllInOne(self.fullpath, [0, 1, 3], 'VEC-CORRz')
                             self.Cmunu_Configs.append(self.Cmunu)
 
 
@@ -412,7 +486,7 @@ class read_dds_files:
 
 
                             self.conf_num_list.append(int(self.conf_num))
-                            self.read_file_samemu(self.fullpath, [1, 2, 3], 'VEC-CORRx')
+                            self.read_file_samemu_AllInOne(self.fullpath, [1, 2, 3], 'VEC-CORRx')
                             self.Cmunu_Configs.append(self.Cmunu)
 
 
@@ -445,7 +519,7 @@ class read_dds_files:
                         if self.check_linenum(self.fullpath, Line_Right):
 
                             self.conf_num_list.append(int(self.conf_num))
-                            self.read_file_samemu(self.fullpath, [0, 2, 3], 'VEC-CORRy')
+                            self.read_file_samemu_AllInOne(self.fullpath, [0, 2, 3], 'VEC-CORRy')
                             self.Cmunu_Configs.append(self.Cmunu)
 
 
@@ -478,7 +552,7 @@ class read_dds_files:
                         if self.check_linenum(self.fullpath, Line_Right):
 
                             self.conf_num_list.append(int(self.conf_num))
-                            self.read_file_samemu(self.fullpath, [0, 1, 3], 'VEC-CORRz')
+                            self.read_file_samemu_AllInOne(self.fullpath, [0, 1, 3], 'VEC-CORRz')
                             self.Cmunu_Configs.append(self.Cmunu)
 
 
@@ -494,7 +568,6 @@ class read_dds_files:
         self.conf_num_list, self.Cmunu_Configs = Avg_Same(self.conf_num_list, self.Cmunu_Configs)
 
         return self.Cmunu_Configs
-
 
 def Pi_q(q, Cmunu, tmax):
     Pi = 0
@@ -597,11 +670,16 @@ class do_48:
 
     def runTimeSlices(self):
         print 'Reading TimeSlice'
-        read_t = read_dds_files(self.path, 'vec', self.L, 'TimeSlice')
-        read_t.read_allconfig()
+        read_Exact = read_dds_files(self.path, 'vec_Exact', self.L, 'TimeSlice')
+        read_Exact.ReadAllconfig()
+        read_Sub = read_dds_files(self.path, 'vec_Sub', self.L, 'TimeSlice')
+        read_Sub.ReadAllconfig()
+        read_AMA = read_dds_files(self.path, 'vec_AMA', self.L, 'TimeSlice')
+        read_AMA.ReadAllconfig()
+        Cmunu_Configs = read_Exact.Cmunu_Configs - read_Sub.Cmunu_Configs + read_AMA.Cmunu_Configs
         qsqu = Make_qsqu(1, 1, 1, 30, self.L)
-        pi_matrix = Make_Pi_matrix(qsqu.qsqu, read_t.Cmunu_Configs, self.L[3])
-        Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/Fitting/results/64c fitting/c_64_t').output()
+        pi_matrix = Make_Pi_matrix(qsqu.qsqu, Cmunu_Configs, self.L[3])
+        Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/Fitting/results/48c fitting/c_48_t').output()
 
 class do_64:
     def __init__(self):
@@ -611,7 +689,7 @@ class do_64:
     def runTimeSlices(self):
         print 'Reading TimeSlice'
         read_t = read_dds_files(self.path, 'vec', self.L, 'TimeSlice')
-        read_t.read_allconfig()
+        read_t.read_allconfig_AllInOne()
         qsqu = Make_qsqu(1, 1, 1, 30, self.L)
         pi_matrix = Make_Pi_matrix(qsqu.qsqu, read_t.Cmunu_Configs, self.L[3])
         Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/Fitting/results/64c fitting/c_64_t').output()
@@ -673,8 +751,11 @@ class do_96:
 #do_64()
 
 
-start = do_96()
-start.runTimeSlicesHalf()
+#start = do_96()
+#start.runTimeSlicesHalf()
 
-start = do_64()
+#start = do_64()
+#start.runTimeSlices()
+
+start = do_48()
 start.runTimeSlices()
