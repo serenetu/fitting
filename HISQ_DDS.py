@@ -91,6 +91,7 @@ def SortAvg(Vec, Mtx):
     matrix_same = []
     vector_same.append(vector[0])
     matrix_same.append(matrix[0])
+
     ii = 0
 
     for i in range(1, line_num):
@@ -243,6 +244,9 @@ class read_dds_files:
                             temp_t.append(int((int(linesplit[8]) - int(linesplit[2]) + self.TMAX) % self.TMAX))
                             temp_Cmunu_Rel.append(float(linesplit[9]))
 
+                            #print temp_Cmunu_Rel
+                            #print
+
 
                             #print temp_t
                             #print line
@@ -252,6 +256,9 @@ class read_dds_files:
                         else:
                             temp_t.append(int((int(linesplit[8]) - int(linesplit[2]) + self.TMAX) % self.TMAX))
                             temp_Cmunu_Rel.append(float(linesplit[9]))
+
+                            #print temp_Cmunu_Rel
+                            #print
 
                             #print temp_t
                             #print line
@@ -303,9 +310,9 @@ class read_dds_files:
                     if (mu_line in mu) & (nu_line in mu) & (mu_line == nu_line):
                         t.append(int((int(linesplit[8]) - int(linesplit[2]) + self.TMAX) % self.TMAX))
                         real.append(float(linesplit[9]))
+        #print t
+        #print real[0], real[0+192], real[192*2], real[192*3], real[192*4], real[192*5], real[192*6], real[192*7]
         difft, self.Cmunu = SortAvg(t, real)
-
-
 
     def print_raw(self):
         print '##############################################################################'
@@ -364,7 +371,7 @@ class read_dds_files:
 
         return self.Cmunu_Configs
 
-    def ReadAllconfig(self):
+    def ReadAllconfig(self, VEC = 'VEC-CORR'):
         self.Cmunu_Configs = []
         self.conf_num_list = []
         i = 0
@@ -378,7 +385,7 @@ class read_dds_files:
                         self.conf_num_list.append(int(conf_num))
                         print 'Read File: ' + self.fullpath
 
-                        self.ReadFileSamemu(self.fullpath, [0, 1, 2], 'VEC-CORR')
+                        self.ReadFileSamemu(self.fullpath, [0, 1, 2], VEC)
 
                         self.Cmunu_Configs.append(self.Cmunu)
 
@@ -581,10 +588,11 @@ def Pi_q(q, Cmunu, tmax):
 class Make_Pi_matrix:
     def __init__(self, qsqu, Cmunu_Configs, tmax):
         config, t = Cmunu_Configs.shape
+        lenqsqu = len(qsqu)
         self.matrix = []
         for config_index in range(0, config):
             self.matrix.append([])
-            for n in range(0, 20):
+            for n in range(0, lenqsqu):
                 self.matrix[config_index].append(Pi_q((qsqu[n]) ** (1.0 / 2.0), Cmunu_Configs[config_index], tmax))
 
 class Make_qsqu:
@@ -613,7 +621,7 @@ class Make_qsqu:
         qsqu_same.append(self.qsqu[0])
 
         for i in range(1, line_num):
-            if self.qsqu[i] != self.qsqu[i - 1]:
+            if abs(self.qsqu[i] - self.qsqu[i - 1])>10**(-7):
                 qsqu_same.append(self.qsqu[i])
         qsqu_same = np.array(qsqu_same)
         qsqu_same = np.delete(qsqu_same, 0, 0)
@@ -698,7 +706,9 @@ class do_64:
 class do_96:
     def __init__(self):
         self.path = '/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ'
+        #self.path = '/Users/tucheng/Desktop'
         self.L = [96, 96, 96, 192]
+        self.outputfile = '/Users/tucheng/Desktop/Fitting/results/96c fitting/c_96_t'
 
     def runTimeSlicesHalf(self):
         print 'Reading TimeSlice'
@@ -712,6 +722,7 @@ class do_96:
         print 'Reading TimeSlice'
         read_t = read_dds_files(self.path, 'vec_ama_xyzt', self.L, 'TimeSlice')
         read_t.read_allconfig_tslices(952320)
+        print read_t.Cmunu_Configs[0]
         qsqu = Make_qsqu(1, 1, 1, 30, self.L)
         pi_matrix = Make_Pi_matrix(qsqu.qsqu, read_t.Cmunu_Configs, self.L[3])
         Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/Fitting/results/96c fitting/c_96_t').output()
@@ -748,6 +759,27 @@ class do_96:
         pi_matrix = Make_Pi_matrix(qsqu.qsqu, read_z.Cmunu_Configs, self.L[0])
         Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, '/Users/tucheng/Desktop/Fitting/results/96c fitting/c_96_z').output()
 
+    def runTimeSlicesFromSeperateFiles(self):
+        print 'Reading TimeSlice'
+
+        read_Exact = read_dds_files(self.path, 'vec_Exact', self.L, 'TimeSlice')
+        read_Exact.ReadAllconfig('VEC-CORRt')
+        read_Sub = read_dds_files(self.path, 'vec_Sub', self.L, 'TimeSlice')
+        read_Sub.ReadAllconfig('VEC-CORRt')
+        read_AMA = read_dds_files(self.path, 'vec_AMA', self.L, 'TimeSlice')
+        read_AMA.ReadAllconfig('VEC-CORRt')
+        Cmunu_Configs = read_Exact.Cmunu_Configs - read_Sub.Cmunu_Configs + read_AMA.Cmunu_Configs
+        # print Cmunu_Configs[0]
+        qsqu = Make_qsqu(1, 1, 1, self.L[3], self.L)
+        # print qsqu.qsqu
+        pi_matrix = Make_Pi_matrix(qsqu.qsqu, Cmunu_Configs, self.L[3])
+        Make_CovMatx(qsqu.qsqu, pi_matrix.matrix, self.outputfile).output()
+
+
+start = do_96()
+#start.runTimeSlices()
+start.runTimeSlicesFromSeperateFiles()
+
 #do_64()
 
 
@@ -757,5 +789,5 @@ class do_96:
 #start = do_64()
 #start.runTimeSlices()
 
-start = do_48()
-start.runTimeSlices()
+#start = do_48()
+#start.runTimeSlices()

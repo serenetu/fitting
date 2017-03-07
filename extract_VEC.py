@@ -17,6 +17,46 @@ import os
 import shutil
 import time
 
+
+def check_NumOfSrcGlobal(Filename_Fullpath):
+    '''
+    Check number of the lines that contain 'src_global_xyzt'
+    :param filename:
+    :return:
+    '''
+    num = 0
+    file = open(Filename_Fullpath, 'r')
+    for line in file.readlines():
+        if 'src_global_xyzt' in line:
+            num += 1
+    return num
+
+
+class CheckFiles_By_NumOfSrcGlobal:
+    '''
+    Check number of files
+    :param NumOfSrcGlobal:
+    :return:
+    '''
+    def __init__(self, folder_Fullpath, NumOfSrcGlobal):
+        self.num = 0
+        self.filename = []
+        filelist = (src.func.walkfiles(folder_Fullpath, prt=0))[1]
+        for file in filelist:
+            if NumOfSrcGlobal == check_NumOfSrcGlobal(folder_Fullpath + '/' + file):
+                self.num += 1
+                self.filename.append(file)
+
+def ChooseNewerFile(folder_Fullpath, file_list):
+    file = file_list[0]
+    filetime = os.path.getmtime(folder_Fullpath + '/' + file_list[0])
+    listlen = len(file_list)
+    for i in range(1, listlen):
+        if os.path.getmtime(folder_Fullpath + '/' + file_list[i]) > filetime:
+            file = file_list[i]
+            filetime = os.path.getmtime(folder_Fullpath + '/' + file_list[i])
+    return file
+
 class mix_exact_sub_sloppy:
 
     '''
@@ -182,6 +222,46 @@ class mix_exact_sub_sloppy:
         for wrong in wrong_config:
             print wrong
 
+class Copy_Latest_output:
+
+    def __int__(self, path, savepath, filelabel, ensemble):
+        self.path = path
+        self.savepath = savepath
+        self.filelabel = filelabel
+        self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
+
+        for folder in self.folderlist:
+            if (self.ensemble in folder) & ('bc' in folder):
+                conf_num = folder.split(".")[-1]
+                filelist = (src.func.walkfiles(folder, prt=0))[1]
+                if (self.filelabel in file) & (('.' + conf_num + '.') in file):
+                    out_ama_time = os.path.getmtime(self.path + '/' + folder + '/' + file)
+
+
+class LoopsOverFolder:
+
+    def __init__(self, path, folderlabel = ''):
+        self.path = path
+        self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
+        self.folderlabellist = []
+        self.index = 0
+        for folder in self.folderlist:
+            if folderlabel in folder:
+                self.folderlabellist.append(folder)
+        self.FolderLen = len(self.folderlabellist)
+
+    def Loops(self):
+        if self.index < self.FolderLen:
+            self.ResentFolder = self.folderlabellist[self.index]
+            self.ResentFullPath = self.path + '/' + self.ResentFolder
+            self.index = self.index + 1
+            return True
+        else:
+            self.index = 0
+            return False
+
+
+
 class Extract_VEC:
 
     '''
@@ -201,6 +281,35 @@ class Extract_VEC:
         self.path = path
         self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
         self.ensemble = ensemble
+        self.wrongconfig = []
+
+
+    def FindLatestData(self, filelabel):
+        '''
+        Find the lateset file under each configuration folder
+        :param filelabel: The label of the file that need to be checked
+        :return: save the files name list into 'self.FileList' and the full path of those files 'FilePathList'
+        '''
+
+        folderloop = LoopsOverFolder(self.path, self.ensemble)
+        self.FileList = []
+        self.FilePathList = []
+        while folderloop.Loops():
+            file_time_old = 0
+
+            FileFullList = (src.func.walkfiles(folderloop.ResentFullPath, prt=0))[1]
+
+            filecheck = ''
+            for file in FileFullList:
+                if (filelabel in file) :
+                    file_time = os.path.getmtime(folderloop.ResentFullPath + '/' + file)
+                    if file_time > file_time_old:
+                        filecheck = file
+
+            if filecheck != '':
+                self.FileList.append(filecheck)
+                self.FilePathList.append(folderloop.ResentFullPath + '/' + filecheck)
+
 
     def run(self):
 
@@ -528,6 +637,126 @@ class Extract_VEC:
                             print 'wrong config:'
                             print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
 
+    def Separate_E_S_A_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
+        '''
+        Read in the lastest file labeled in 'ReadinFileLabel' under each configuration
+        The files will be check if they contain all three Exact Sub AMA
+        Write them into three files individually in each configuration under the 'SavePath'
+        When the pending save file is already exist, print out warning.
+        :param SavePath:
+        :param ReadinFileLabel:
+        :return:
+        '''
+
+        print 'Separate Exact Sub AMA:'
+
+        self.FindLatestData(ReadinFileLabel)
+
+        for file in self.FilePathList:
+            if os.path.getsize(file) != 0:
+
+                ConfigFolder = file.split("/")[-2]
+                conf_num = ConfigFolder.split(".")[-1]
+
+                FileRead = open(file, 'r')
+                AllLines = FileRead.readlines()
+                TotalLineNum = len(AllLines)
+                LineNum = -1
+                src_linenum = [] # The line number of the line with 'src_global_xyzt: 0 0 0 0'
+                for lines in AllLines:
+                    LineNum += 1
+                    if 'src_global_xyzt: 0 0 0 0' in lines:
+                        src_linenum.append(LineNum)
+                if len(src_linenum) == 3: # Which means the file contain all Exact Sub and AMA
+
+                    if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
+                        os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+
+                    if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num) == False & \
+                       os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num) == False & \
+                       os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num) == False:
+
+                        vec_Exact = open(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num, 'w')
+                        vec_Sub = open(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num, 'w')
+                        vec_AMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num, 'w')
+
+                        for n in range(src_linenum[0], src_linenum[1]):
+                            if 'VEC' in AllLines[n]:
+                                vec_Exact.write(AllLines[n])
+                        vec_Exact.close()
+                        print 'create ' + self.path + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num
+                        for n in range(src_linenum[1], src_linenum[2]):
+                            if 'VEC' in AllLines[n]:
+                                vec_Sub.write(AllLines[n])
+                        vec_Sub.close()
+                        print 'create ' + self.path + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num
+                        for n in range(src_linenum[2], TotalLineNum):
+                            if 'VEC' in AllLines[n]:
+                                vec_AMA.write(AllLines[n])
+                        vec_AMA.close()
+                        print 'create ' + self.path + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num
+                        FileRead.close()
+                    else:
+                        print 'The vec files are already exist'
+                else:
+                    print 'wrong config:'
+                    print self.path + '/' + ConfigFolder + '/' + 'vec' + '.' + conf_num
+
+    def run_96(self):
+        for folder in self.folderlist:
+            if (self.ensemble in folder) & ('t' in folder):
+                checkES = CheckFiles_By_NumOfSrcGlobal(self.path + '/' + folder, 16)
+                checkAMA = CheckFiles_By_NumOfSrcGlobal(self.path + '/' + folder, 108)
+
+                if (checkES.num >= 1) & (checkAMA.num >= 1):
+
+                    print self.path + '/' + folder + ': ES ' + str(checkES.num) + ' AMA ' + str(checkAMA.num)
+
+                    ESfile = ChooseNewerFile(self.path + '/' + folder, checkES.filename)
+                    AMAfile = ChooseNewerFile(self.path + '/' + folder, checkAMA.filename)
+
+                    conf_num = folder.split(".")[-1]
+
+                    fileES = open(self.path + '/' + folder + '/' + ESfile, 'r')
+                    fileAMA = open(self.path + '/' + folder + '/' + AMAfile, 'r')
+                    vec_Exact = open(self.path + '/' + folder + '/' + 'vec_Exact' + '.' + conf_num, 'w')
+                    vec_Sub = open(self.path + '/' + folder + '/' + 'vec_Sub' + '.' + conf_num, 'w')
+                    vec_AMA = open(self.path + '/' + folder + '/' + 'vec_AMA' + '.' + conf_num, 'w')
+
+                    # Write and write all 'CORR' and seperate into two files
+                    NumOfSrcGlobal = 0
+                    for lines in fileES.readlines():
+                        if 'src_global_xyzt' in lines:
+                            NumOfSrcGlobal +=1
+                        if ('VEC-CORR' in lines) & (NumOfSrcGlobal < 9):
+                            vec_Exact.write(lines)
+                        if ('VEC-CORR' in lines) & (NumOfSrcGlobal >= 9):
+                            vec_Sub.write(lines)
+                    vec_Exact.close()
+                    vec_Sub.close()
+                    print 'create ' + self.path + '/' + folder + '/' + 'vec_Exact' + '.' + conf_num
+                    print 'create ' + self.path + '/' + folder + '/' + 'vec_Sub' + '.' + conf_num
+
+
+                    # Write AMA
+                    for lines in fileAMA.readlines():
+                        if 'VEC-CORR' in lines:
+                            vec_AMA.write(lines)
+                    vec_AMA.close()
+                    print 'create ' + self.path + '/' + folder + '/' + 'vec_AMA' + '.' + conf_num
+
+                else:
+                    self.wrongconfig.append(self.path + '/' + folder)
+
+    def PrtWrongConfig(self):
+        wronglen = len(self.wrongconfig)
+        print 'Wrong Config'
+        for i in range (0, wronglen):
+            print self.wrongconfig[i]
+
+
+
+
 
 
 
@@ -535,9 +764,9 @@ class Extract_VEC:
 
 
 '''
-Mix_96 = mix_exact_sub_sloppy('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/')
-Mix_96.share_exact()
-Mix_96.Combine_96()
+Mix_96 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l96')
+Mix_96.run_96()
+Mix_96.PrtWrongConfig()
 '''
 
 '''
@@ -545,7 +774,12 @@ l64 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ
 l64.run()
 '''
 
+'''
 l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
 #l48.run_check_Size_Date_Complete()
 l48.run_Num_Size()
 l48.Separate_E_S_A()
+'''
+
+l64 = Extract_VEC('/Users/tucheng/Desktop/fitting/data/HISQ', 'l64')
+l64.Separate_E_S_A_SAVETODIFFFOLDER('', 'out')

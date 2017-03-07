@@ -18,6 +18,10 @@ def walkfiles(path, prt = 0):
     for dirpath, dirnames, filenames in os.walk(path):
         dir_name.append(dirnames)
         file_names.append(filenames)
+    if dir_name == []:
+        dir_name.append([])
+    if file_names == []:
+        file_names.append([])
     if prt == 1:
         print dir_name[0]
         print file_names[0]
