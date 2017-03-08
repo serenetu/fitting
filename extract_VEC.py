@@ -1,22 +1,22 @@
 __author__ = 'SereneTu'
 
-import numpy as np
-# import sympy as sympy
-from scipy.optimize import minimize
-# from sympy import *
-from scipy import integrate
-from scipy.integrate import quadrature
-from scipy.integrate import fixed_quad
-import matplotlib.pyplot as plt
-import random
-import copy
-import math
-import sys
-import src.func
 import os
 import shutil
-import time
 
+def walkfiles(path, prt = 0):
+    dir_name = []
+    file_names = []
+    for dirpath, dirnames, filenames in os.walk(path):
+        dir_name.append(dirnames)
+        file_names.append(filenames)
+    if dir_name == []:
+        dir_name.append([])
+    if file_names == []:
+        file_names.append([])
+    if prt == 1:
+        print dir_name[0]
+        print file_names[0]
+    return dir_name[0], file_names[0]
 
 def check_NumOfSrcGlobal(Filename_Fullpath):
     '''
@@ -31,7 +31,6 @@ def check_NumOfSrcGlobal(Filename_Fullpath):
             num += 1
     return num
 
-
 class CheckFiles_By_NumOfSrcGlobal:
     '''
     Check number of files
@@ -41,7 +40,7 @@ class CheckFiles_By_NumOfSrcGlobal:
     def __init__(self, folder_Fullpath, NumOfSrcGlobal):
         self.num = 0
         self.filename = []
-        filelist = (src.func.walkfiles(folder_Fullpath, prt=0))[1]
+        filelist = (walkfiles(folder_Fullpath, prt=0))[1]
         for file in filelist:
             if NumOfSrcGlobal == check_NumOfSrcGlobal(folder_Fullpath + '/' + file):
                 self.num += 1
@@ -72,7 +71,7 @@ class mix_exact_sub_sloppy:
         '''
 
         self.path = path
-        self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
+        self.folderlist = (walkfiles(self.path, prt=0))[0]
 
     def share_exact(self):
 
@@ -90,7 +89,7 @@ class mix_exact_sub_sloppy:
                 for folder_x16t24 in self.folderlist:
                     if ('l96' in folder_x16t24) & ('x16-t24' in folder_x16t24) & (('.' + conf_num) in folder_x16t24):
 
-                        filelist = (src.func.walkfiles(self.path + '/' + folder_x0t0, prt=0))[1]
+                        filelist = (walkfiles(self.path + '/' + folder_x0t0, prt=0))[1]
                         for file in filelist:
                             if ('exact' in file) & (('.' + conf_num + '.') in file):
                                 exact_size = os.path.getsize(self.path + '/' + folder_x0t0 + '/' + file)
@@ -119,7 +118,7 @@ class mix_exact_sub_sloppy:
         for folder in self.folderlist:
             if ('l96' in folder) & ('t' in folder):
                 conf_num = folder.split(".")[-1]
-                filelist = (src.func.walkfiles(self.path + '/' + folder, prt=0))[1]
+                filelist = (walkfiles(self.path + '/' + folder, prt=0))[1]
 
 
                 exact_num, sloppy_num = 0, 0
@@ -228,12 +227,12 @@ class Copy_Latest_output:
         self.path = path
         self.savepath = savepath
         self.filelabel = filelabel
-        self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
+        self.folderlist = (walkfiles(self.path, prt=0))[0]
 
         for folder in self.folderlist:
             if (self.ensemble in folder) & ('bc' in folder):
                 conf_num = folder.split(".")[-1]
-                filelist = (src.func.walkfiles(folder, prt=0))[1]
+                filelist = (walkfiles(folder, prt=0))[1]
                 if (self.filelabel in file) & (('.' + conf_num + '.') in file):
                     out_ama_time = os.path.getmtime(self.path + '/' + folder + '/' + file)
 
@@ -242,7 +241,7 @@ class LoopsOverFolder:
 
     def __init__(self, path, folderlabel = ''):
         self.path = path
-        self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
+        self.folderlist = (walkfiles(self.path, prt=0))[0]
         self.folderlabellist = []
         self.index = 0
         for folder in self.folderlist:
@@ -279,7 +278,7 @@ class Extract_VEC:
         '''
 
         self.path = path
-        self.folderlist = (src.func.walkfiles(self.path, prt=0))[0]
+        self.folderlist = (walkfiles(self.path, prt=0))[0]
         self.ensemble = ensemble
         self.wrongconfig = []
 
@@ -297,7 +296,7 @@ class Extract_VEC:
         while folderloop.Loops():
             file_time_old = 0
 
-            FileFullList = (src.func.walkfiles(folderloop.ResentFullPath, prt=0))[1]
+            FileFullList = (walkfiles(folderloop.ResentFullPath, prt=0))[1]
 
             filecheck = ''
             for file in FileFullList:
@@ -325,7 +324,7 @@ class Extract_VEC:
         for folder in self.folderlist:
             if (self.ensemble in folder) & ('t' in folder):
                 conf_num = folder.split(".")[-1]
-                filelist = (src.func.walkfiles(self.path + '/' + folder, prt=0))[1]
+                filelist = (walkfiles(self.path + '/' + folder, prt=0))[1]
 
                 out_ama_num = 0
                 ama_time_old = 0
@@ -376,7 +375,7 @@ class Extract_VEC:
         '''
 
         conf_num = folder.split(".")[-1]
-        filelist = (src.func.walkfiles(self.path + '/' + folder, prt=0))[1]
+        filelist = (walkfiles(self.path + '/' + folder, prt=0))[1]
         ama_time_old = 0
         out_ama_num = 0
         for file in filelist:
@@ -404,7 +403,7 @@ class Extract_VEC:
         num1 = 0
         num2 = 0
         filename = []
-        filelist = (src.func.walkfiles(self.path + '/' + folder, prt=0))[1]
+        filelist = (walkfiles(self.path + '/' + folder, prt=0))[1]
         for file in filelist:
             if name in file:
                 out_ama_size = os.path.getsize(self.path + '/' + folder + '/' + file)
