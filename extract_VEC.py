@@ -636,6 +636,44 @@ class Extract_VEC:
                             print 'wrong config:'
                             print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
 
+    def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
+
+        '''
+        Read in the latest LMA file labeled in 'ReadinFileLabel' under each configuration
+        The file should just contain LMA
+        Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
+        When the pending save file is already exist, print out warning.
+        '''
+
+        print 'Save LMA to: ' + SavePath
+        self.FindLatestData(ReadinFileLabel)
+
+        for file in self.FilePathList:
+            if os.path.getsize(file) != 0:
+
+                ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
+                conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
+                FileRead = open(file, 'r')
+                AllLines = FileRead.readlines()
+
+                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
+                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+
+
+                if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num) == False:
+                    if 'VEC' in AllLines:
+                        vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num, 'w')
+                        for line in AllLines:
+                            if 'VEC' in line:
+                                vec_LMA.write(line)
+                        vec_LMA.close()
+                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num
+                    else:
+                        print 'There is no "VEC" lines in ' + file
+                else:
+                    print SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num + ' is already exist'
+                    
+
     def Separate_E_S_A_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
         '''
         Read in the lastest file labeled in 'ReadinFileLabel' under each configuration
@@ -683,17 +721,17 @@ class Extract_VEC:
                             if 'VEC' in AllLines[n]:
                                 vec_Exact.write(AllLines[n])
                         vec_Exact.close()
-                        print 'create ' + self.path + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num
+                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num
                         for n in range(src_linenum[1], src_linenum[2]):
                             if 'VEC' in AllLines[n]:
                                 vec_Sub.write(AllLines[n])
                         vec_Sub.close()
-                        print 'create ' + self.path + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num
+                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num
                         for n in range(src_linenum[2], TotalLineNum):
                             if 'VEC' in AllLines[n]:
                                 vec_AMA.write(AllLines[n])
                         vec_AMA.close()
-                        print 'create ' + self.path + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num
+                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num
                         FileRead.close()
                     else:
                         print 'The vec files are already exist'
@@ -780,5 +818,8 @@ l48.run_Num_Size()
 l48.Separate_E_S_A()
 '''
 
-l64 = Extract_VEC('/Users/tucheng/Desktop/fitting/data/HISQ', 'l64')
-l64.Separate_E_S_A_SAVETODIFFFOLDER('', 'out')
+l64 = Extract_VEC('/lqcdproj/Muon/ctu/HISQ', 'l64')
+'''
+l64.Separate_E_S_A_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-hvp')
+'''
+l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA')
