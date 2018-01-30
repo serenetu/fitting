@@ -236,8 +236,7 @@ class Copy_Latest_output:
                 if (self.filelabel in file) & (('.' + conf_num + '.') in file):
                     out_ama_time = os.path.getmtime(self.path + '/' + folder + '/' + file)
 
-
-class LoopsOverFolder:
+class LoopOverFolder:
 
     def __init__(self, path, folderlabel = ''):
         self.path = path
@@ -249,7 +248,7 @@ class LoopsOverFolder:
                 self.folderlabellist.append(folder)
         self.FolderLen = len(self.folderlabellist)
 
-    def Loops(self):
+    def do_loop(self):
         if self.index < self.FolderLen:
             self.ResentFolder = self.folderlabellist[self.index]
             self.ResentFullPath = self.path + '/' + self.ResentFolder
@@ -259,8 +258,6 @@ class LoopsOverFolder:
             self.index = 0
             return False
 
-
-
 class Extract_VEC:
 
     '''
@@ -268,20 +265,20 @@ class Extract_VEC:
     !!Attention!!: those 'out-ama' files should contain Exact and Sub and AMA in order (usually 8 & 8 & rest)
     '''
 
-    def __init__(self, path, ensemble):
+    def __init__(self, path, config_folder_label):
 
         '''
         Read in path and build a folder list under that path
         And set the ensemble label ('l64', 'l48'...)
         :param path: HISQ path
-        :param ensemble: 'l64', 'l48'...
+        :param config_folder_label: 'l64', 'l48'...
         '''
 
         self.path = path
         self.folderlist = (walkfiles(self.path, prt=0))[0]
-        self.ensemble = ensemble
+        self.config_folder_label = config_folder_label
         self.wrongconfig = []
-
+        return
 
     def FindLatestData(self, filelabel):
         '''
@@ -290,10 +287,10 @@ class Extract_VEC:
         :return: save the files name list into 'self.FileList' and the full path 'FilePathList'
         '''
 
-        folderloop = LoopsOverFolder(self.path, self.ensemble)
+        folderloop = LoopOverFolder(self.path, self.config_folder_label)
         self.FileList = []
         self.FilePathList = []
-        while folderloop.Loops():
+        while folderloop.do_loop():
             file_time_old = 0
 
             FileFullList = (walkfiles(folderloop.ResentFullPath, prt=0))[1]
@@ -309,7 +306,48 @@ class Extract_VEC:
             if filecheck != '':
                 self.FileList.append(filecheck)
                 self.FilePathList.append(folderloop.ResentFullPath + '/' + filecheck)
+        return
 
+    def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
+
+        '''
+        Read in the latest LMA file labeled in 'ReadinFileLabel' under each configuration
+        The file should contain LMA between 'VacPol from All Sourses'
+        Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
+        When the pending save file is already exist, print out warning.
+        '''
+
+        print 'Save LMA to: ' + SavePath
+        self.FindLatestData(ReadinFileLabel)
+
+        for file in self.FilePathList:
+            if os.path.getsize(file) != 0:
+
+                ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
+                conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
+                FileRead = open(file, 'r')
+                #AllLines = FileRead.readlines()
+
+                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
+                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+
+
+                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num, 'w')
+                for line in FileRead:
+                    if 'VacPol from All Sourses' in line:
+                        break
+                for line in FileRead:
+                    if 'VEC' in line:
+                        vec_LMA.write(line)
+                        if 'VacPol from All Sourses' in line:
+                            break
+                vec_LMA.close()
+                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num) == 0:
+                    os.remove(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num)
+                    print 'There is no "VEC" lines in ' + file
+                else:
+                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num
+        return
 
     def run(self):
 
@@ -323,7 +361,7 @@ class Extract_VEC:
         wrong_config = []
         right_config_num = 0
         for folder in self.folderlist:
-            if (self.ensemble in folder) & ('t' in folder):
+            if (self.config_folder_label in folder) & ('t' in folder):
                 conf_num = folder.split(".")[-1]
                 filelist = (walkfiles(self.path + '/' + folder, prt=0))[1]
 
@@ -468,7 +506,7 @@ class Extract_VEC:
         right_config_num = 0
         NotCompleteList = []
         for folder in self.folderlist:
-            if (self.ensemble in folder) & ('t' in folder):
+            if (self.config_folder_label in folder) & ('t' in folder):
                 checkres1 = self.check_Size_Date(folder, 10.0 ** 7.0)
 
                 if checkres1[0]:
@@ -520,7 +558,7 @@ class Extract_VEC:
 
         NotCompleteList = []
         for folder in self.folderlist:
-            if (self.ensemble in folder) & ('t' in folder):
+            if (self.config_folder_label in folder) & ('t' in folder):
                 check_Num_Size = self.check_Num_Size(folder, 'out-ama')
                 print folder
                 print check_Num_Size
@@ -600,7 +638,7 @@ class Extract_VEC:
 
         print 'Separate Exact Sub AMA:'
         for folder in self.folderlist:
-            if (self.ensemble in folder) & ('t' in folder):
+            if (self.config_folder_label in folder) & ('t' in folder):
                 conf_num = folder.split(".")[-1]
                 if os.path.isfile(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num):
                     if os.path.getsize(self.path + '/' + folder + '/' + 'vec' + '.' + conf_num) != 0:
@@ -637,47 +675,6 @@ class Extract_VEC:
                             print 'wrong config:'
                             print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
 
-    def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
-
-        '''
-        Read in the latest LMA file labeled in 'ReadinFileLabel' under each configuration
-        The file should contain LMA between 'VacPol from All Sourses'
-        Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
-        When the pending save file is already exist, print out warning.
-        '''
-
-        print 'Save LMA to: ' + SavePath
-        self.FindLatestData(ReadinFileLabel)
-
-        for file in self.FilePathList:
-            if os.path.getsize(file) != 0:
-
-                ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
-                conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
-                FileRead = open(file, 'r')
-                #AllLines = FileRead.readlines()
-
-                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
-                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
-
-
-                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num, 'w')
-                for line in FileRead:
-                    if 'VacPol from All Sourses' in line:
-                        break
-                for line in FileRead:
-                    if 'VEC' in line:
-                        vec_LMA.write(line)
-                        if 'VacPol from All Sourses' in line:
-                            break
-                vec_LMA.close()
-                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num) == 0:
-                    os.remove(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num)
-                    print 'There is no "VEC" lines in ' + file
-                else:
-                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num
-                        
-                    
     def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
 
         '''
@@ -788,7 +785,7 @@ class Extract_VEC:
 
     def run_96(self):
         for folder in self.folderlist:
-            if (self.ensemble in folder) & ('t' in folder):
+            if (self.config_folder_label in folder) & ('t' in folder):
                 checkES = CheckFiles_By_NumOfSrcGlobal(self.path + '/' + folder, 16)
                 checkAMA = CheckFiles_By_NumOfSrcGlobal(self.path + '/' + folder, 108)
 
@@ -865,11 +862,12 @@ l48.run_Num_Size()
 l48.Separate_E_S_A()
 '''
 
-l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
-l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
-l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-#l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
-#l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
+#l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
+#l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
+#l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
+#l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
+l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-reorder')
+l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ_extract', 'out-LMA.')
+l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ_extract', 'out-LMASUB.')
 #l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
 #l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMASUB.')

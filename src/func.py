@@ -105,7 +105,6 @@ def read_confignm_AMA_Exact_SUB(L, path, prt = 0):
         return hvp_nm, sorted(hvpAMA_nm), sorted(hvpExact_nm), sorted(hvpSUB_nm)
 
 
-
 def cp_rn(HISQ_PATH, L, confignm, HISQ_RN, prt = 0):
     hvpAMA_nm, hvpExact_nm, hvpSUB_nm = [], [], []
     if L == 48:
