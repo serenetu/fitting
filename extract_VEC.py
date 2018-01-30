@@ -287,7 +287,7 @@ class Extract_VEC:
         '''
         Find the lateset file under each configuration folder
         :param filelabel: The label of the file that need to be checked
-        :return: save the files name list into 'self.FileList' and the full path of those files 'FilePathList'
+        :return: save the files name list into 'self.FileList' and the full path 'FilePathList'
         '''
 
         folderloop = LoopsOverFolder(self.path, self.ensemble)
@@ -304,6 +304,7 @@ class Extract_VEC:
                     file_time = os.path.getmtime(folderloop.ResentFullPath + '/' + file)
                     if file_time > file_time_old:
                         filecheck = file
+                        file_time_old = file_time
 
             if filecheck != '':
                 self.FileList.append(filecheck)
@@ -640,7 +641,7 @@ class Extract_VEC:
 
         '''
         Read in the latest LMA file labeled in 'ReadinFileLabel' under each configuration
-        The file should just contain LMA
+        The file should contain LMA between 'VacPol from All Sourses'
         Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
         When the pending save file is already exist, print out warning.
         '''
@@ -654,35 +655,76 @@ class Extract_VEC:
                 ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
                 conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
                 FileRead = open(file, 'r')
-                AllLines = FileRead.readlines()
+                #AllLines = FileRead.readlines()
 
                 if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
                     os.mkdir(SavePath + '/' + ConfigFolder, 0755)
 
 
-                if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num) == False:
-                    if 'VEC' in AllLines:
-                        vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num, 'w')
-                        for line in AllLines:
-                            if 'VEC' in line:
-                                vec_LMA.write(line)
-                        vec_LMA.close()
-                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num
-                    else:
-                        print 'There is no "VEC" lines in ' + file
+                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num, 'w')
+                for line in FileRead:
+                    if 'VacPol from All Sourses' in line:
+                        break
+                for line in FileRead:
+                    if 'VEC' in line:
+                        vec_LMA.write(line)
+                        if 'VacPol from All Sourses' in line:
+                            break
+                vec_LMA.close()
+                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num) == 0:
+                    os.remove(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num)
+                    print 'There is no "VEC" lines in ' + file
                 else:
-                    print SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num + ' is already exist'
+                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num
+                        
                     
+    def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
 
-    def Separate_E_S_A_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
+        '''
+        Read in the latest LMASUB file labeled in 'ReadinFileLabel' under each configuration
+        The file should contain LMASUB labeled between 'VacPol from Selected Sourses'
+        Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
+        When the pending save file is already exist, print out warning.
+        '''
+
+        print 'Save LMASUB to: ' + SavePath
+        self.FindLatestData(ReadinFileLabel)
+
+        for file in self.FilePathList:
+            if os.path.getsize(file) != 0:
+
+                ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
+                conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
+                FileRead = open(file, 'r')
+                #AllLines = FileRead.readlines()
+
+                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
+                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+
+
+                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num, 'w')
+                for line in FileRead:
+                    if 'VacPol from Selected Sourses' in line:
+                        break
+                for line in FileRead:
+                    if 'VEC' in line:
+                        vec_LMA.write(line)
+                    if 'VacPol from Selected Sourses' in line:
+                        break
+                vec_LMA.close()
+                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num) == 0:
+                    os.remove(SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num)
+                    print 'There is no "VEC" lines in ' + file
+                else:
+                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num
+
+    def Separate_E_S_A_SAVETODIFFFOLDER(self, ReadinFileLabel, MinSize, SavePath, rewrite, ExactLabel, SubLabel, AMALabel):
         '''
         Read in the lastest file labeled in 'ReadinFileLabel' under each configuration
-        The files will be check if they contain all three Exact Sub AMA
+        Check if the sizes of the files are larger than 'MinSize'
+        The files will also be checked if they contain all three Exact Sub AMA
         Write them into three files individually in each configuration under the 'SavePath'
-        When the pending save file is already exist, print out warning.
-        :param SavePath:
-        :param ReadinFileLabel:
-        :return:
+        :rewrite: True/False, rewrite the output file if it has already been exist
         '''
 
         print 'Separate Exact Sub AMA:'
@@ -690,54 +732,59 @@ class Extract_VEC:
         self.FindLatestData(ReadinFileLabel)
 
         for file in self.FilePathList:
-            if os.path.getsize(file) != 0:
+            #check size
+            if os.path.getsize(file) < MinSize:
+                print 'invalide size:'
+                print file
+                continue
 
-                ConfigFolder = file.split("/")[-2]
-                conf_num = ConfigFolder.split(".")[-1]
+            ConfigFolder = file.split("/")[-2]
+            conf_num = ConfigFolder.split(".")[-1]
+            
+            if rewrite == False:
+                if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num) == True & \
+                   os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num) == True & \
+                   os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num) == True:
+                    print 'The vec files are already exist'
+                    continue
 
-                FileRead = open(file, 'r')
-                AllLines = FileRead.readlines()
-                TotalLineNum = len(AllLines)
-                LineNum = -1
-                src_linenum = [] # The line number of the line with 'src_global_xyzt: 0 0 0 0'
-                for lines in AllLines:
-                    LineNum += 1
-                    if 'src_global_xyzt: 0 0 0 0' in lines:
-                        src_linenum.append(LineNum)
-                if len(src_linenum) == 3: # Which means the file contain all Exact Sub and AMA
+            FileRead = open(file, 'r')
+            AllLines = FileRead.readlines()
+            TotalLineNum = len(AllLines)
+            LineNum = -1
+            src_linenum = [] # The line number of the line with 'src_global_xyzt: 0 0 0 0'
+            for lines in AllLines:
+                LineNum += 1
+                if 'src_global_xyzt: 0 0 0 0' in lines:
+                    src_linenum.append(LineNum)
+            if len(src_linenum) == 3: # Which means the file contain all Exact Sub and AMA
 
-                    if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
-                        os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
+                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+                
+                vec_Exact = open(SavePath + '/' + ConfigFolder + '/' + ExactLabel + '.' + conf_num, 'w')
+                vec_Sub = open(SavePath + '/' + ConfigFolder + '/' + SubLabel + '.' + conf_num, 'w')
+                vec_AMA = open(SavePath + '/' + ConfigFolder + '/' + AMALabel + '.' + conf_num, 'w')
 
-                    if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num) == False & \
-                       os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num) == False & \
-                       os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num) == False:
-
-                        vec_Exact = open(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num, 'w')
-                        vec_Sub = open(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num, 'w')
-                        vec_AMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num, 'w')
-
-                        for n in range(src_linenum[0], src_linenum[1]):
-                            if 'VEC' in AllLines[n]:
-                                vec_Exact.write(AllLines[n])
-                        vec_Exact.close()
-                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num
-                        for n in range(src_linenum[1], src_linenum[2]):
-                            if 'VEC' in AllLines[n]:
-                                vec_Sub.write(AllLines[n])
-                        vec_Sub.close()
-                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num
-                        for n in range(src_linenum[2], TotalLineNum):
-                            if 'VEC' in AllLines[n]:
-                                vec_AMA.write(AllLines[n])
-                        vec_AMA.close()
-                        print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num
-                        FileRead.close()
-                    else:
-                        print 'The vec files are already exist'
-                else:
-                    print 'wrong config:'
-                    print self.path + '/' + ConfigFolder + '/' + 'vec' + '.' + conf_num
+                for n in range(src_linenum[0], src_linenum[1]):
+                    if 'VEC' in AllLines[n]:
+                        vec_Exact.write(AllLines[n])
+                vec_Exact.close()
+                print 'create ' + SavePath + '/' + ConfigFolder + '/' + ExactLabel + '.' + conf_num
+                for n in range(src_linenum[1], src_linenum[2]):
+                    if 'VEC' in AllLines[n]:
+                        vec_Sub.write(AllLines[n])
+                vec_Sub.close()
+                print 'create ' + SavePath + '/' + ConfigFolder + '/' + SubLabel + '.' + conf_num
+                for n in range(src_linenum[2], TotalLineNum):
+                    if 'VEC' in AllLines[n]:
+                        vec_AMA.write(AllLines[n])
+                vec_AMA.close()
+                print 'create ' + SavePath + '/' + ConfigFolder + '/' + AMALabel + '.' + conf_num
+                FileRead.close()
+            else:
+                print 'corrupted config:'
+                print self.path + '/' + ConfigFolder + '/' + 'vec' + '.' + conf_num
 
     def run_96(self):
         for folder in self.folderlist:
@@ -818,8 +865,11 @@ l48.run_Num_Size()
 l48.Separate_E_S_A()
 '''
 
-l64 = Extract_VEC('/lqcdproj/Muon/ctu/HISQ', 'l64')
-'''
-l64.Separate_E_S_A_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-hvp')
-'''
-l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA')
+l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
+l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
+l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
+l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
+#l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
+#l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
+#l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
+#l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMASUB.')
