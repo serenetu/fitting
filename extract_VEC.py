@@ -296,11 +296,11 @@ class Extract_VEC:
             FileFullList = (walkfiles(folderloop.ResentFullPath, prt=0))[1]
 
             filecheck = ''
-            for file in FileFullList:
-                if (filelabel in file) :
-                    file_time = os.path.getmtime(folderloop.ResentFullPath + '/' + file)
+            for file_name in FileFullList:
+                if (filelabel in file_name) :
+                    file_time = os.path.getmtime(folderloop.ResentFullPath + '/' + file_name)
                     if file_time > file_time_old:
-                        filecheck = file
+                        filecheck = file_name
                         file_time_old = file_time
 
             if filecheck != '':
@@ -308,7 +308,7 @@ class Extract_VEC:
                 self.FilePathList.append(folderloop.ResentFullPath + '/' + filecheck)
         return
 
-    def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
+    def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel):
 
         '''
         Read in the latest LMA file labeled in 'ReadinFileLabel' under each configuration
@@ -332,21 +332,21 @@ class Extract_VEC:
                     os.mkdir(SavePath + '/' + ConfigFolder, 0755)
 
 
-                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num, 'w')
+                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num, 'w')
                 for line in FileRead:
                     if 'VacPol from All Sourses' in line:
                         break
                 for line in FileRead:
                     if 'VEC' in line:
                         vec_LMA.write(line)
-                        if 'VacPol from All Sourses' in line:
-                            break
+                    if 'VacPol from All Sourses' in line:
+                        break
                 vec_LMA.close()
-                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num) == 0:
-                    os.remove(SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num)
+                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num) == 0:
+                    os.remove(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num)
                     print 'There is no "VEC" lines in ' + file
                 else:
-                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMA' + '.' + conf_num
+                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num
         return
 
     def run(self):
@@ -675,7 +675,7 @@ class Extract_VEC:
                             print 'wrong config:'
                             print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
 
-    def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel):
+    def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel):
 
         '''
         Read in the latest LMASUB file labeled in 'ReadinFileLabel' under each configuration
@@ -699,7 +699,7 @@ class Extract_VEC:
                     os.mkdir(SavePath + '/' + ConfigFolder, 0755)
 
 
-                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num, 'w')
+                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num, 'w')
                 for line in FileRead:
                     if 'VacPol from Selected Sourses' in line:
                         break
@@ -709,11 +709,11 @@ class Extract_VEC:
                     if 'VacPol from Selected Sourses' in line:
                         break
                 vec_LMA.close()
-                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num) == 0:
-                    os.remove(SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num)
+                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num) == 0:
+                    os.remove(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num)
                     print 'There is no "VEC" lines in ' + file
                 else:
-                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + 'vec_LMASUB' + '.' + conf_num
+                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num
 
     def Separate_E_S_A_SAVETODIFFFOLDER(self, ReadinFileLabel, MinSize, SavePath, rewrite, ExactLabel, SubLabel, AMALabel):
         '''
@@ -866,8 +866,14 @@ l48.Separate_E_S_A()
 #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
 #l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
 #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-reorder')
-l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ_extract', 'out-LMA.')
-l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ_extract', 'out-LMASUB.')
-#l64.LMA_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMA.')
-#l64.LMASUB_SAVETODIFFFOLDER('/home/ctu/HISQ', 'out-LMASUB.')
+HISQ_PATH = '/volatile/gMinus2/HISQ'
+FOLDER_LABEL = 'l6496f211b630m0012m0363m432-reorder-3000Eig'
+FILE_LABEL = 'out-LMA'
+
+OUT_PATH = '/home/ctu/HISQ_extract'
+OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
+OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
+
+l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
