@@ -3,6 +3,7 @@ __author__ = 'SereneTu'
 import os
 import shutil
 
+'''
 def walkfiles(path, prt = 0):
     dir_name = []
     file_names = []
@@ -17,6 +18,18 @@ def walkfiles(path, prt = 0):
         print dir_name[0]
         print file_names[0]
     return dir_name[0], file_names[0]
+'''
+
+def walkfiles(path, prt = 0):
+    dirlist = os.listdir(path)
+    dir_name = []
+    file_name = []
+    for l in dirlist:
+        if os.path.isdir(path + '/' + l):
+            dir_name.append(l)
+        elif os.path.isfile(path + '/' + l):
+            file_name.append(l)
+    return dir_name, file_name
 
 def check_NumOfSrcGlobal(Filename_Fullpath):
     '''
@@ -729,6 +742,7 @@ class Extract_VEC:
         self.FindLatestData(ReadinFileLabel)
 
         for file in self.FilePathList:
+            print 'in the folder:', file
             #check size
             if os.path.getsize(file) < MinSize:
                 print 'invalide size:'
@@ -861,7 +875,7 @@ l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ
 l48.run_Num_Size()
 l48.Separate_E_S_A()
 '''
-
+'''
 #l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
 #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
 #l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
@@ -877,3 +891,44 @@ OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
 l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
 l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
 l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+'''
+
+HISQ_PATH = '/volatile/gMinus2/HISQ'
+FOLDER_LABEL = 'l6496f211b630m0012m0363m432-lma'
+FILE_LABEL = 'out-lma'
+
+OUT_PATH = '/home/ctu/HISQ_extract/l6496/'
+OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
+OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
+
+l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+
+'''
+HISQ_PATH = '/volatile/gMinus2/HISQ'
+FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-lma'
+FILE_LABEL = 'out-LMA'
+
+OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
+OUT_LMA_LABEL = 'l4864f211b600m00184m0507m628a-LMA'
+OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
+
+l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+l48.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+l48.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+'''
+
+'''
+HISQ_PATH = '/home/ctu/hvp/'
+FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
+FILE_LABEL = 'out-'
+
+OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
+OUT_AMA_LABEL = 'l4864f211b600m00184m0507m628a-AMA'
+OUT_EXACT_LABEL = 'l4864f211b600m00184m0507m628a-EXACT'
+OUT_SUB_LABEL = 'l4864f211b600m00184m0507m628a-SUB'
+
+l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+l48.Separate_E_S_A_SAVETODIFFFOLDER(FILE_LABEL, 60000000, OUT_PATH, True, OUT_EXACT_LABEL, OUT_SUB_LABEL, OUT_AMA_LABEL)
+'''
