@@ -2,6 +2,7 @@ __author__ = 'SereneTu'
 
 import os
 import shutil
+from datetime import datetime
 
 '''
 def walkfiles(path, prt = 0):
@@ -318,8 +319,32 @@ class Extract_VEC:
 
             if filecheck != '':
                 self.FileList.append(filecheck)
-                self.FilePathList.append(folderloop.ResentFullPath + '/' + filecheck)
-        return
+                self.FilePathList.append(os.path.normpath(folderloop.ResentFullPath + '/' + filecheck))
+        return self.FilePathList
+
+    def find_two_latest_files_byname(self, file_label_1, file_label_2):
+        folderloop = LoopOverFolder(self.path, self.config_folder_label)
+        path_and_two_files_list = []
+        while folderloop.do_loop():
+            file_list = (walkfiles(folderloop.ResentFullPath, prt=0))[1]
+            #oldest_time_1 = 0.
+            #oldest_time_2 = 0.
+
+            file_new_1 = ''
+            file_new_2 = ''
+            for file in file_list:
+                file_time = os.path.getmtime(folderloop.ResentFullPath + '/' + file)
+                if (file_label_1 in file) and (file > file_new_1):
+                    file_new_1 = file
+                    #oldest_time_1 = file_time
+                if (file_label_2 in file) and (file > file_new_2):
+                    file_new_2 = file
+                    #oldest_time_2 = file_time
+            if file_new_1 != '' and file_new_2 != '':
+                path_and_two_files_list.append([os.path.normpath(folderloop.ResentFullPath), file_new_1, file_new_2])
+            else:
+                print 'No Such Two Files In:', os.path.normpath(folderloop.ResentFullPath), 'With Label:', file_label_1, file_label_2
+        return path_and_two_files_list
 
     def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel):
 
@@ -330,8 +355,12 @@ class Extract_VEC:
         When the pending save file is already exist, print out warning.
         '''
 
+        print '============================================'
         print 'Save LMA to: ' + SavePath
+        print '============================================'
         self.FindLatestData(ReadinFileLabel)
+        LMA_Good = []
+        LMA_Bad = []
 
         for file in self.FilePathList:
             if os.path.getsize(file) != 0:
@@ -339,7 +368,6 @@ class Extract_VEC:
                 ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
                 conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
                 FileRead = open(file, 'r')
-                #AllLines = FileRead.readlines()
 
                 if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
                     os.mkdir(SavePath + '/' + ConfigFolder, 0755)
@@ -358,8 +386,161 @@ class Extract_VEC:
                 if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num) == 0:
                     os.remove(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num)
                     print 'There is no "VEC" lines in ' + file
+                    LMA_Bad.append(conf_num)
                 else:
                     print 'create ' + SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num
+                    LMA_Good.append(conf_num)
+        print 'LMA Extract Successfully:', len(LMA_Good)
+        LMA_Good.sort()
+        print LMA_Good
+        print 'LMA Extract Failed:', len(LMA_Bad)
+        LMA_Bad.sort()
+        print LMA_Bad
+        return
+
+    def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel, VacPolLabel='VacPol from Selected Sourses'):
+
+        '''
+        Read in the latest LMASUB file labeled in 'ReadinFileLabel' under each configuration
+        The file should contain LMASUB labeled between 'VacPol from Selected Sourses'
+        Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
+        When the pending save file is already exist, print out warning.
+        '''
+
+        print '============================================'
+        print 'Save LMASUB to: ' + SavePath
+        print '============================================'
+        self.FindLatestData(ReadinFileLabel)
+        LMASUB_Good = []
+        LMASUB_Bad = []
+
+        for file in self.FilePathList:
+            if os.path.getsize(file) != 0:
+
+                ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
+                conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
+                FileRead = open(file, 'r')
+
+                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
+                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+
+                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num, 'w')
+                for line in FileRead:
+                    if VacPolLabel in line:
+                        break
+                for line in FileRead:
+                    if 'VEC' in line:
+                        vec_LMA.write(line)
+                    if 'VacPol from Selected Sourses' in line:
+                        break
+                vec_LMA.close()
+                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num) == 0:
+                    os.remove(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num)
+                    print 'There is no "VEC" lines in ' + file
+                    LMASUB_Bad.append(conf_num)
+                else:
+                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num
+                    LMASUB_Good.append(conf_num)
+        print 'LMASUB Extract Successfully:', len(LMASUB_Good)
+        LMASUB_Good.sort()
+        print LMASUB_Good
+        print 'LMASUB Extract Failed:', len(LMASUB_Bad)
+        LMASUB_Bad.sort()
+        print LMASUB_Bad
+        return
+
+    def E_S_A_in_two_files(self, readin_filelabel_1, readin_filelabel_2, VEC_anchor1, VEC_anchor2,
+                           E_n_src, S_n_src, A_n_src,
+                           save_path, out_Exact_label, out_Sub_label, out_AMA_label):
+
+        print '======================================'
+        print 'Separate Exact Sub AMA from two files:'
+        print '======================================'
+
+        E_S_A_good = []
+        E_S_A_bad = []
+
+        path_and_two_files_list = self.find_two_latest_files_byname(readin_filelabel_1, readin_filelabel_2)
+        for path_and_two_files in path_and_two_files_list:
+            conf_num = (os.path.normpath(path_and_two_files[0])).split(".")[-1]
+            conf_folder = (os.path.normpath(path_and_two_files[0])).split("/")[-1]
+
+            file1_read = open(path_and_two_files[0]+'/'+path_and_two_files[1], 'r')
+            file2_read = open(path_and_two_files[0]+'/'+path_and_two_files[2], 'r')
+
+            if os.path.isdir(save_path + '/' + conf_folder) == False:
+                os.mkdir(save_path + '/' + conf_folder, 0755)
+            out_Exact = open(save_path + '/' + conf_folder + '/' + out_Exact_label + '.' + conf_num, 'w')
+            out_Sub   = open(save_path + '/' + conf_folder + '/' + out_Sub_label   + '.' + conf_num, 'w')
+            out_AMA   = open(save_path + '/' + conf_folder + '/' + out_AMA_label   + '.' + conf_num, 'w')
+
+            anchor1_num = 0
+            exact_num = 0
+            sub_num = 0
+            ama_num = 0
+            out_file = None
+            check_identity1 = None
+            for file1_line in file1_read:
+                if VEC_anchor1 in file1_line:
+                    anchor1_num += 1
+                    if anchor1_num == 1:
+                        out_file = out_Exact
+                    elif anchor1_num == 2:
+                        out_file = out_Sub
+                    elif anchor1_num == 3:
+                        out_file = out_AMA
+                if 'src_global_xyzt:' in file1_line and anchor1_num == 1:
+                    exact_num += 1
+                if 'src_global_xyzt:' in file1_line and anchor1_num == 2:
+                    sub_num += 1
+                if 'src_global_xyzt:' in file1_line and anchor1_num == 3:
+                    ama_num += 1
+                if out_file != None:
+                    if 'VEC' in file1_line:
+                        out_file.write(file1_line)
+                if check_identity1 == None and anchor1_num == 1 and 'VEC' in file1_line:
+                    check_identity1 = float(file1_line.split()[10])
+            anchor2_num = 0
+            out_file = None
+            check_identity2 = None
+            for file2_line in file2_read:
+                if VEC_anchor2 in file2_line:
+                    anchor2_num += 1
+                    if anchor2_num == 3:
+                        out_file = out_AMA
+                if 'src_global_xyzt:' in file2_line and anchor2_num == 3:
+                    ama_num += 1
+                if out_file != None:
+                    if 'VEC' in file2_line:
+                        out_file.write(file2_line)
+                if check_identity2 == None and anchor2_num == 1 and 'VEC' in file2_line:
+                    check_identity2 = float(file2_line.split()[10])
+
+            out_Exact.close()
+            out_Sub.close()
+            out_AMA.close()
+
+            if anchor1_num == anchor2_num == 3 and check_identity1 != None and check_identity2 != None \
+                    and exact_num == E_n_src and sub_num == S_n_src and ama_num == A_n_src \
+                    and abs(check_identity1) < 1e-10 and abs(check_identity2) < 1e-10:
+
+            # if anchor1_num == anchor2_num == 3 and exact_num == E_n_src and sub_num == S_n_src and ama_num == A_n_src:
+
+                E_S_A_good.append(conf_num)
+                print 'Creat Extracted Exact Sub and AMA to:', str(save_path + '/' + conf_folder)
+            else:
+                os.remove(save_path + '/' + conf_folder + '/' + out_Exact_label + '.' + conf_num)
+                os.remove(save_path + '/' + conf_folder + '/' + out_Sub_label   + '.' + conf_num)
+                os.remove(save_path + '/' + conf_folder + '/' + out_AMA_label   + '.' + conf_num)
+                E_S_A_bad.append(conf_num)
+                print 'Wrong Configuration:', conf_num
+
+        print 'E S A Extract Successfully:', len(E_S_A_good)
+        E_S_A_good.sort()
+        print E_S_A_good
+        print 'E S A Extract Failed:', len(E_S_A_bad)
+        E_S_A_bad.sort()
+        print E_S_A_bad
         return
 
     def run(self):
@@ -688,47 +869,7 @@ class Extract_VEC:
                             print 'wrong config:'
                             print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
 
-    def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel):
-
-        '''
-        Read in the latest LMASUB file labeled in 'ReadinFileLabel' under each configuration
-        The file should contain LMASUB labeled between 'VacPol from Selected Sourses'
-        Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
-        When the pending save file is already exist, print out warning.
-        '''
-
-        print 'Save LMASUB to: ' + SavePath
-        self.FindLatestData(ReadinFileLabel)
-
-        for file in self.FilePathList:
-            if os.path.getsize(file) != 0:
-
-                ConfigFolder = file.split("/")[-2] #Folder name of the Configuration
-                conf_num = ConfigFolder.split(".")[-1] #Index of the Configuration
-                FileRead = open(file, 'r')
-                #AllLines = FileRead.readlines()
-
-                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
-                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
-
-
-                vec_LMA = open(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num, 'w')
-                for line in FileRead:
-                    if 'VacPol from Selected Sourses' in line:
-                        break
-                for line in FileRead:
-                    if 'VEC' in line:
-                        vec_LMA.write(line)
-                    if 'VacPol from Selected Sourses' in line:
-                        break
-                vec_LMA.close()
-                if os.path.getsize(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num) == 0:
-                    os.remove(SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num)
-                    print 'There is no "VEC" lines in ' + file
-                else:
-                    print 'create ' + SavePath + '/' + ConfigFolder + '/' + OutFileLabel + '.' + conf_num
-
-    def Separate_E_S_A_SAVETODIFFFOLDER(self, ReadinFileLabel, MinSize, SavePath, rewrite, ExactLabel, SubLabel, AMALabel):
+    def Separate_E_S_A_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, ExactLabel, SubLabel, AMALabel, MinSize = 0, rewrite = False, OutFileLabel = None):
         '''
         Read in the lastest file labeled in 'ReadinFileLabel' under each configuration
         Check if the sizes of the files are larger than 'MinSize'
@@ -751,7 +892,9 @@ class Extract_VEC:
 
             ConfigFolder = file.split("/")[-2]
             conf_num = ConfigFolder.split(".")[-1]
-            
+            if OutFileLabel != None:
+                ConfigFolder = OutFileLabel + '.' + str(conf_num)
+
             if rewrite == False:
                 if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num) == True & \
                    os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num) == True & \
@@ -796,6 +939,123 @@ class Extract_VEC:
             else:
                 print 'corrupted config:'
                 print self.path + '/' + ConfigFolder + '/' + 'vec' + '.' + conf_num
+
+    def extract_exact_sub(self, readin_file_label, save_path, out_folder_label, out_file_label, min_size = 0):
+
+        print 'Extract Exact Sub:'
+
+        self.FindLatestData(readin_file_label)
+        good_configs = []
+
+        for file in self.FilePathList:
+            print 'Looking The File:', file
+
+            #check size
+            if os.path.getsize(file) < min_size:
+                print 'invalide size:'
+                print file
+                continue
+
+            config_folder = file.split("/")[-2]
+            conf_num = config_folder.split(".")[-1]
+
+            out_folder_name = out_folder_label + '.' + str(conf_num)
+
+
+            file_read = open(file, 'r')
+            all_lines = file_read.readlines()
+            file_read.close()
+            total_line_num = len(all_lines)
+            line_num = -1
+            src_linenum = []                               # The line number of the line with 'src_global_xyzt: 0 0 0 0'
+            for lines in all_lines:
+                line_num += 1
+                if 'src_global_xyzt: 0 0 0 0' in lines:
+                    src_linenum.append(line_num)
+            if len(src_linenum) == 2:                                           # Which means the file contain Exact Sub
+
+                if os.path.isdir(save_path + '/' + out_folder_name) == False:
+                    os.mkdir(save_path + '/' + out_folder_name, 0755)
+
+                exact_path = os.path.abspath(save_path + '/' + out_folder_name + '/' + out_file_label + '-Exact.' + conf_num)
+                sub_path = os.path.abspath(save_path + '/' + out_folder_name + '/' + out_file_label + '-Sub.' + conf_num)
+                vec_exact = open(exact_path, 'w')
+                vec_sub   = open(sub_path, 'w')
+
+                # write exact
+                for n in range(src_linenum[0], src_linenum[1]):
+                    if 'VEC' in all_lines[n]:
+                        vec_exact.write(all_lines[n])
+                vec_exact.close()
+                print 'Create ' + str(exact_path)
+
+                # write sub
+                for n in range(src_linenum[1], total_line_num):
+                    if 'VEC' in all_lines[n]:
+                        vec_sub.write(all_lines[n])
+                vec_sub.close()
+                print 'Create ' + str(sub_path)
+                print
+                good_configs.append(conf_num)
+
+            else:
+                print 'Cannot Find Exact And Sub In File:'
+                print file
+                print
+        print str(len(good_configs)), 'Exact and Sub Have Been Extracted To', save_path, ':'
+        print good_configs
+        return
+
+    def extract_ama_in_two_files(self, readin_file_label, save_path, out_folder_label, out_file_label, num_src = None):
+
+        print 'Extract AMA:'
+
+        config_dir_list = os.listdir(self.path)
+        good_configs = []
+        for config_dir in config_dir_list:
+            config_path = os.path.abspath(self.path + '/' + config_dir)
+            if not os.path.isdir(config_path):
+                continue
+            file_list = os.listdir(config_path)
+            ama_list = []
+            for file in file_list:
+                if readin_file_label in file:
+                    file_path = os.path.abspath(config_path + '/' + file)
+                    ama_list.append(file_path)
+            if len(ama_list) != 2:
+                print 'The Number of AMA Files Are Not Correct (Should Be 2):', config_path
+                continue
+            else:
+                print 'Looking Into:'
+                print ama_list[0]
+                print ama_list[1]
+
+            # start to read ama
+            conf_num = config_dir.split(".")[1]
+            ama_folder = os.path.abspath(save_path + '/' + out_folder_label + '.' + str(conf_num))
+            if os.path.isdir(ama_folder) == False:
+                os.mkdir(ama_folder, 0755)
+            ama_file = os.path.abspath(ama_folder + '/' + out_file_label + '-AMA.' + conf_num)
+            vec_ama = open(ama_file, 'w')
+            num = 0
+            for ama in ama_list:
+                ama_open = open(ama, 'r')
+                for line in ama_open:
+                    if 'src_global_xyzt' in line:
+                        num += 1
+                    if 'VEC' in line:
+                        vec_ama.write(line)
+                ama_open.close()
+            vec_ama.close()
+            if (num_src is not None) and (num != num_src):
+                print 'The Number of Source Points Do Not match'
+                os.remove(ama_file)
+            else:
+                print 'Create:', ama_file
+                good_configs.append(conf_num)
+        print str(len(good_configs)), 'AMA Have Been Extracted To', save_path, ':'
+        print good_configs
+        return
 
     def run_96(self):
         for folder in self.folderlist:
@@ -849,86 +1109,191 @@ class Extract_VEC:
         for i in range (0, wronglen):
             print self.wrongconfig[i]
 
+if __name__ == "__main__":
 
+    '''
+    Mix_96 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l96')
+    Mix_96.run_96()
+    Mix_96.PrtWrongConfig()
+    '''
 
+    '''
+    l64 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l64')
+    l64.run()
+    '''
 
+    '''
+    l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
+    #l48.run_check_Size_Date_Complete()
+    l48.run_Num_Size()
+    l48.Separate_E_S_A()
+    '''
+    '''
+    #l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
+    #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
+    #l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
+    #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
+    HISQ_PATH = '/volatile/gMinus2/HISQ'
+    FOLDER_LABEL = 'l6496f211b630m0012m0363m432-reorder-3000Eig'
+    FILE_LABEL = 'out-LMA'
 
+    OUT_PATH = '/home/ctu/HISQ_extract'
+    OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
+    OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
 
+    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+    l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+    '''
 
+    '''
+    HISQ_PATH = '/volatile/gMinus2/HISQ'
+    FOLDER_LABEL = 'l6496f211b630m0012m0363m432-lma'
+    FILE_LABEL = 'out-lma'
 
+    OUT_PATH = '/home/ctu/HISQ_extract/l6496/'
+    OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
+    OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
 
+    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+    l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+    '''
 
-'''
-Mix_96 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l96')
-Mix_96.run_96()
-Mix_96.PrtWrongConfig()
-'''
+    '''
+    HISQ_PATH = '/volatile/gMinus2/HISQ'
+    FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-lma'
+    FILE_LABEL = 'out-LMA'
 
-'''
-l64 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l64')
-l64.run()
-'''
+    OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
+    OUT_LMA_LABEL = 'l4864f211b600m00184m0507m628a-LMA'
+    OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
 
-'''
-l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
-#l48.run_check_Size_Date_Complete()
-l48.run_Num_Size()
-l48.Separate_E_S_A()
-'''
-'''
-#l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
-#l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-#l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
-#l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-HISQ_PATH = '/volatile/gMinus2/HISQ'
-FOLDER_LABEL = 'l6496f211b630m0012m0363m432-reorder-3000Eig'
-FILE_LABEL = 'out-LMA'
+    l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l48.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+    l48.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+    '''
 
-OUT_PATH = '/home/ctu/HISQ_extract'
-OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
-OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
+    '''
+    HISQ_PATH = '/home/ctu/hvp/'
+    FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
+    FILE_LABEL = 'out-'
 
-l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
-l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
-'''
+    OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
+    OUT_AMA_LABEL = 'l4864f211b600m00184m0507m628a-AMA'
+    OUT_EXACT_LABEL = 'l4864f211b600m00184m0507m628a-EXACT'
+    OUT_SUB_LABEL = 'l4864f211b600m00184m0507m628a-SUB'
 
-HISQ_PATH = '/volatile/gMinus2/HISQ'
-FOLDER_LABEL = 'l6496f211b630m0012m0363m432-lma'
-FILE_LABEL = 'out-lma'
+    l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l48.Separate_E_S_A_SAVETODIFFFOLDER(FILE_LABEL, 60000000, OUT_PATH, True, OUT_EXACT_LABEL, OUT_SUB_LABEL, OUT_AMA_LABEL)
+    '''
 
-OUT_PATH = '/home/ctu/HISQ_extract/l6496/'
-OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
-OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
+    '''
+    # for l4864 AMA
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l4864/ama'
+    FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
+    IN_FILE_LABEL = 'out-x0.12t0.16'
+    FILE_ANCHOR = 'src_global_xyzt: 0 0 0 0'
+    E_n_src = 8
+    S_n_src = 8
+    A_n_src = 4 * 4 * 4 * 4
 
-l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
-l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
+    OUT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
+    OUT_EXACT = 'l4864f211b600m00184m0507m628a-Exact'
+    OUT_SUB   = 'l4864f211b600m00184m0507m628a-Sub'
+    OUT_AMA   = 'l4864f211b600m00184m0507m628a-AMA'
 
-'''
-HISQ_PATH = '/volatile/gMinus2/HISQ'
-FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-lma'
-FILE_LABEL = 'out-LMA'
+    l48_ama = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l48_ama.Separate_E_S_A_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_EXACT, OUT_SUB, OUT_AMA)
+    '''
 
-OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
-OUT_LMA_LABEL = 'l4864f211b600m00184m0507m628a-LMA'
-OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
+    '''
+    # for l4864 LMA
+    HISQ_PATH        = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l4864/lma'
+    FOLDER_LABEL     = 'l4864f211b600m00184m0507m628a-lma'
+    IN_FILE_LABEL    = 'out-LMA'
+    OUT_PATH         = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
+    OUT_LMA_LABEL    = 'l4864f211b600m00184m0507m628a-LMA'
+    OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
 
-l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-l48.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
-l48.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
-'''
+    l48_lma = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l48_lma.LMA_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_LMA_LABEL)
+    LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 12 tstart 0 tinc 16) Start'
+    l48_lma.LMASUB_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
+    '''
 
-'''
-HISQ_PATH = '/home/ctu/hvp/'
-FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
-FILE_LABEL = 'out-'
+    '''
+    # for l96 AMA
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l96192'
+    FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
+    IN_E_S_FILE_LABEL = 'out-exact-sub'
+    IN_AMA_FILE_LABEL = 'out-sloppy'
+    E_n_src = 8
+    S_n_src = 8
+    A_n_src = 3 * 3 * 3 * 4 * 2
 
-OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
-OUT_AMA_LABEL = 'l4864f211b600m00184m0507m628a-AMA'
-OUT_EXACT_LABEL = 'l4864f211b600m00184m0507m628a-EXACT'
-OUT_SUB_LABEL = 'l4864f211b600m00184m0507m628a-SUB'
+    OUT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l96c192/'
+    OUT_FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
+    OUT_FILE_LABEL = FOLDER_LABEL
+    OUT_EXACT = 'l96192f211b672m0008m022m260a-Exact'
+    OUT_SUB   = 'l96192f211b672m0008m022m260a-Sub'
+    OUT_AMA   = 'l96192f211b672m0008m022m260a-AMA'
 
-l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-l48.Separate_E_S_A_SAVETODIFFFOLDER(FILE_LABEL, 60000000, OUT_PATH, True, OUT_EXACT_LABEL, OUT_SUB_LABEL, OUT_AMA_LABEL)
-'''
+    l96_ama = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l96_ama.extract_exact_sub(IN_E_S_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL)
+    l96_ama.extract_ama_in_two_files(IN_AMA_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL, num_src = A_n_src)
+
+    # for l96 LMA
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l96192'
+    FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
+    FILE_LABEL = 'out-LMA'
+    LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 32 tstart 0 tinc 48) and (start2 16 inc2 32 tstart2 24 tinc2 48)'
+
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l96c192/'
+    OUT_LMA_LABEL = 'l96192f211b672m0008m022m260a-LMA'
+    OUT_LMASUB_LABEL = 'l96192f211b672m0008m022m260a-LMASUB'
+
+    l96 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l96.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+    l96.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
+    '''
+
+    # for l64 AMA
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l6496'
+    FOLDER_LABEL = 'l6496f211b630m0012m0363m432'
+    IN_FILE_LABEL1 = 'out-x0.16t0.48'
+    IN_FILE_LABEL2 = 'out-x0.16t24.48'
+    FILE_ANCHOR1 = 'src_global_xyzt: 0 0 0 0'
+    FILE_ANCHOR2 = 'src_global_xyzt: 0 0 0 24'
+    E_n_src = 8
+    S_n_src = 8
+    A_n_src = 256
+
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l64c96/'
+    OUT_EXACT = 'l6496f211b630m0012m0363m432-Exact'
+    OUT_SUB = 'l6496f211b630m0012m0363m432-Sub'
+    OUT_AMA = 'l6496f211b630m0012m0363m432-AMA'
+
+    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64.E_S_A_in_two_files(IN_FILE_LABEL1, IN_FILE_LABEL2, FILE_ANCHOR1, FILE_ANCHOR2, E_n_src, S_n_src, A_n_src, OUT_PATH, OUT_EXACT, OUT_SUB, OUT_AMA)
+
+    '''
+    # for l64 lma
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l6496'
+    FOLDER_LABEL = 'l6496f211b630m0012m0363m432'
+    FILE_LABEL = 'out-LMA'
+    LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 16 tstart 0 tinc 24) Start'
+
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l64c96/'
+    OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-LMA'
+    OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-LMASUB'
+
+    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+    l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
+
+    FILE_LABEL = 'out-lma'
+    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
+    l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
+    '''

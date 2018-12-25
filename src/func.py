@@ -12,6 +12,9 @@ import os
 import shutil
 
 
+def function_name(function):
+    return function.__name__
+
 def walkfiles(path, prt = 0):
     dir_name = []
     file_names = []
