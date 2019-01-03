@@ -1060,7 +1060,7 @@ class DoEnsemble:
 
 class Do4864(DoEnsemble):
 
-    def __init__(self, data_path):
+    def __init__(self, data_path=''):
         self.path = data_path
         self.L = [48, 48, 48, 64]
         self.Vol = self.L[0] * self.L[1] * self.L[2] * self.L[3]
@@ -1078,7 +1078,7 @@ class Do4864(DoEnsemble):
 
 class Do6496(DoEnsemble):
 
-    def __init__(self, data_path):
+    def __init__(self, data_path=''):
         self.path = data_path
         self.L = [64, 64, 64, 96]
         self.Vol = self.L[0] * self.L[1] * self.L[2] * self.L[3]
@@ -1096,7 +1096,7 @@ class Do6496(DoEnsemble):
 
 class Do96192(DoEnsemble):
 
-    def __init__(self, data_path):
+    def __init__(self, data_path=''):
         self.path = data_path
         self.L = [96, 96, 96, 192]
         self.Vol = self.L[0] * self.L[1] * self.L[2] * self.L[3]

@@ -24,6 +24,7 @@ def log(function):
         return function(self, *args, **kwargs)
     return wrapper
 
+
 #?????????
 class Read_AVG:
     def __init__(self, path):
@@ -50,6 +51,7 @@ class Read_AVG:
     def plots(self, points_num, typ = '.b'):
         self.split_qsqu_pi_qsqu_avg_c_matrix(points_num)
         plt.errorbar(self.qsqu, self.pi_qsqu, fmt=typ, elinewidth=1)
+
 
 class read_pi_qsqu_cmatrix_file:
 
@@ -91,6 +93,7 @@ class read_pi_qsqu_cmatrix_file:
         #plt.show()
         return
 
+
 class ReadPiQsqu:
 
     def __init__(self, path):
@@ -116,6 +119,7 @@ class ReadPiQsqu:
         #plt.show()
         return
 
+
 def func_inverse(matrix, dis = 0):
     matrix_inverse = np.linalg.inv(matrix)
     if dis != 0:
@@ -127,6 +131,7 @@ def func_inverse(matrix, dis = 0):
         print matrix.dot(matrix_inverse)
         print
     return matrix_inverse
+
 
 def func_pi(parameters, x, type):
     m = len(parameters)
@@ -154,9 +159,11 @@ def func_pi(parameters, x, type):
             function_pi_sum = x * (parameters[m - 1] + function_pi_sum_part)
             return function_pi_sum
 
+
 def chi_squ(parameters, qsqu, pi_qsqu_avg, c_inverse, type):
     d_data_theory = np.array([np.array(pi_qsqu_avg) - np.array(func_pi(parameters, qsqu, type))])
     return d_data_theory.dot(c_inverse.dot(d_data_theory.T))[0][0]
+
 
 def func_pi_der(parameters, x):
     m = len(parameters)
@@ -176,9 +183,11 @@ def func_pi_der(parameters, x):
             der[i + (m - 1) / 2] = x * (parameters[i] / (parameters[i + (m - 1) / 2] + x) ** 2.0)
         return np.array(der)
 
+
 def chi_squ_der(parameters, qsqu, pi_qsqu_avg, c_inverse):
     return (np.array(func_pi_der(parameters, qsqu)).dot(
         c_inverse.dot(np.array([np.array(func_pi(parameters, qsqu)) - np.array(pi_qsqu_avg)]).T))).T[0]
+
 
 def hessian_matrix(parameters, x, c_inverse, dis = 0):
     hessian = 2.0 * np.array(func_pi_der(parameters, x)).dot(c_inverse.dot(np.array(func_pi_der(parameters, x)).T))
@@ -201,11 +210,14 @@ def hessian_matrix(parameters, x, c_inverse, dis = 0):
         print
     return hessian, delta_ab, uncertainty
 
+
 def z_func(x, mu):
     return ((x ** 2.0 + 4.0 * mu ** 2.0 * x) ** (1.0 / 2.0) - x) / (2.0 * mu ** 2.0 * x)
 
+
 def f_func(x, mu):
     return (mu ** 2.0 * x * (z_func(x, mu)) ** 3.0 * (1.0 - x * z_func(x, mu))) / (1.0 + mu ** 2.0 * x * (z_func(x, mu)) ** 2.0)
+
 
 def comb_func(parameters, x, alpha, mu, type):
     if type == 'NOT DDS':
@@ -254,6 +266,7 @@ class fitting:
         print self.res.x
         print 'uncertainty:'
         print self.uncertainty
+
 
 #????????
 class fit6496:
@@ -631,9 +644,11 @@ def make_jackknife_dic(dic):  # need to improve
 
     return jackknife_dic
 
+
 def jackknife_avg_err_dic(jackknife_dic):
     mean, err = jackknife_avg_err_array(jackknife_dic.values())
     return mean, err
+
 
 def jackknife_avg_err_array(jackknife_array):
     array = np.array(jackknife_array)
@@ -667,6 +682,7 @@ class AmuT_6496(Amu_T):
         self.T_MAX = 96
         return
 
+
 class AmuT_96192(Amu_T):
 
     def __init__(self):
@@ -678,8 +694,6 @@ class AmuT_96192(Amu_T):
         self.fac = 4. * self.alpha ** 2. * (5./9.) * 10. ** 10. * 2.
         self.T_MAX = 192
         return
-
-
 
 
 class Fit6496Jackknife:
@@ -839,6 +853,7 @@ class Plot6496PiQsquFromSingleFile:
         #plt.show()
         return
 
+
 #????????????????
 class fit48:
     def __init__(self):
@@ -862,6 +877,7 @@ class fit48:
             fittingfunc.fitting_output()
             print 'g-2 (from 0.1 to 4*ainv):'
             print (quad(lambda x: comb_func((fittingfunc.res.x), x,  self.alpha, self.mu, 'DDS'), 0.1, 4*self.ainv))[0]
+
 
 #????????????????
 class fit96:
@@ -891,7 +907,6 @@ class fit96:
 
 
 if __name__ == "__main__":
-
 
     '''
     start = Fit4864Jackknife('/Users/tucheng/Desktop/fitting/results/l48/EAL_Jackknife/', 'jackknife-26configs_Exact Sub AMA LMASUB LMA')

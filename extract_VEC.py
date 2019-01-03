@@ -4,24 +4,9 @@ import os
 import shutil
 from datetime import datetime
 
-'''
-def walkfiles(path, prt = 0):
-    dir_name = []
-    file_names = []
-    for dirpath, dirnames, filenames in os.walk(path):
-        dir_name.append(dirnames)
-        file_names.append(filenames)
-    if dir_name == []:
-        dir_name.append([])
-    if file_names == []:
-        file_names.append([])
-    if prt == 1:
-        print dir_name[0]
-        print file_names[0]
-    return dir_name[0], file_names[0]
-'''
 
-def walkfiles(path, prt = 0):
+def walkfiles(path, prt=0):
+
     dirlist = os.listdir(path)
     dir_name = []
     file_name = []
@@ -32,69 +17,70 @@ def walkfiles(path, prt = 0):
             file_name.append(l)
     return dir_name, file_name
 
-def check_NumOfSrcGlobal(Filename_Fullpath):
-    '''
+
+def check_num_of_src_global(filename_fullpath):
+
+    """
     Check number of the lines that contain 'src_global_xyzt'
-    :param filename:
+    :param filename_fullpath:
     :return:
-    '''
+    """
     num = 0
-    file = open(Filename_Fullpath, 'r')
+    file = open(filename_fullpath, 'r')
     for line in file.readlines():
         if 'src_global_xyzt' in line:
             num += 1
     return num
 
-class CheckFiles_By_NumOfSrcGlobal:
-    '''
-    Check number of files
-    :param NumOfSrcGlobal:
-    :return:
-    '''
-    def __init__(self, folder_Fullpath, NumOfSrcGlobal):
+
+class CheckFilesByNumOfSrcGlobal:
+
+    def __init__(self, folder_fullpath, num_of_src_global):
         self.num = 0
         self.filename = []
-        filelist = (walkfiles(folder_Fullpath, prt=0))[1]
+        filelist = (walkfiles(folder_fullpath))[1]
         for file in filelist:
-            if NumOfSrcGlobal == check_NumOfSrcGlobal(folder_Fullpath + '/' + file):
+            if num_of_src_global == check_num_of_src_global(folder_fullpath + '/' + file):
                 self.num += 1
                 self.filename.append(file)
 
-def ChooseNewerFile(folder_Fullpath, file_list):
+
+def choose_newer_file(folder_fullpath, file_list):
     file = file_list[0]
-    filetime = os.path.getmtime(folder_Fullpath + '/' + file_list[0])
+    filetime = os.path.getmtime(folder_fullpath + '/' + file_list[0])
     listlen = len(file_list)
     for i in range(1, listlen):
-        if os.path.getmtime(folder_Fullpath + '/' + file_list[i]) > filetime:
+        if os.path.getmtime(folder_fullpath + '/' + file_list[i]) > filetime:
             file = file_list[i]
-            filetime = os.path.getmtime(folder_Fullpath + '/' + file_list[i])
+            filetime = os.path.getmtime(folder_fullpath + '/' + file_list[i])
     return file
 
-class mix_exact_sub_sloppy:
 
-    '''
+class MixExactSubSloppy:
+
+    """
     Mix Exact, Sub, AMA terms into one file
-    This is designed for 96192 lattice
-    '''
+    This is for 96192 lattice
+    """
 
     def __init__(self, path):
 
-        '''
+        """
         Read in path and build a folder list under that path
         :param path: HISQ path
-        '''
+        """
 
         self.path = path
         self.folderlist = (walkfiles(self.path, prt=0))[0]
 
     def share_exact(self):
 
-        '''
+        """
         Because x0-t0 and x16-t24 folders share the same Exact_Sub values and these files just locate under x0-t0,
         so this function is to copy Exact_Sub to x16-t24
         The size of Exact_Sub should be > 10^6
         :return:
-        '''
+        """
 
         for folder_x0t0 in self.folderlist:
             if ('l96' in folder_x0t0) & ('x0-t0' in folder_x0t0):
@@ -235,7 +221,8 @@ class mix_exact_sub_sloppy:
         for wrong in wrong_config:
             print wrong
 
-class Copy_Latest_output:
+
+class CopyLatestOutput:
 
     def __int__(self, path, savepath, filelabel, ensemble):
         self.path = path
@@ -250,9 +237,10 @@ class Copy_Latest_output:
                 if (self.filelabel in file) & (('.' + conf_num + '.') in file):
                     out_ama_time = os.path.getmtime(self.path + '/' + folder + '/' + file)
 
+
 class LoopOverFolder:
 
-    def __init__(self, path, folderlabel = ''):
+    def __init__(self, path, folderlabel=''):
         self.path = path
         self.folderlist = (walkfiles(self.path, prt=0))[0]
         self.folderlabellist = []
@@ -272,21 +260,22 @@ class LoopOverFolder:
             self.index = 0
             return False
 
-class Extract_VEC:
 
-    '''
+class ExtractVEC:
+
+    """
     Extract 'VEC' lines from 'out-ama' files to 'vec' files
     !!Attention!!: those 'out-ama' files should contain Exact and Sub and AMA in order (usually 8 & 8 & rest)
-    '''
+    """
 
     def __init__(self, path, config_folder_label):
 
-        '''
+        """
         Read in path and build a folder list under that path
         And set the ensemble label ('l64', 'l48'...)
         :param path: HISQ path
         :param config_folder_label: 'l64', 'l48'...
-        '''
+        """
 
         self.path = path
         self.folderlist = (walkfiles(self.path, prt=0))[0]
@@ -294,12 +283,12 @@ class Extract_VEC:
         self.wrongconfig = []
         return
 
-    def FindLatestData(self, filelabel):
-        '''
+    def find_latest_data(self, filelabel):
+        """
         Find the lateset file under each configuration folder
         :param filelabel: The label of the file that need to be checked
         :return: save the files name list into 'self.FileList' and the full path 'FilePathList'
-        '''
+        """
 
         folderloop = LoopOverFolder(self.path, self.config_folder_label)
         self.FileList = []
@@ -348,17 +337,17 @@ class Extract_VEC:
 
     def LMA_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel):
 
-        '''
+        """
         Read in the latest LMA file labeled in 'ReadinFileLabel' under each configuration
         The file should contain LMA between 'VacPol from All Sourses'
         Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
         When the pending save file is already exist, print out warning.
-        '''
+        """
 
         print '============================================'
         print 'Save LMA to: ' + SavePath
         print '============================================'
-        self.FindLatestData(ReadinFileLabel)
+        self.find_latest_data(ReadinFileLabel)
         LMA_Good = []
         LMA_Bad = []
 
@@ -400,17 +389,17 @@ class Extract_VEC:
 
     def LMASUB_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, OutFileLabel, VacPolLabel='VacPol from Selected Sourses'):
 
-        '''
+        """
         Read in the latest LMASUB file labeled in 'ReadinFileLabel' under each configuration
         The file should contain LMASUB labeled between 'VacPol from Selected Sourses'
         Write the line with 'VEC' to the files and save them to each configuration under the 'SavePath'
         When the pending save file is already exist, print out warning.
-        '''
+        """
 
         print '============================================'
         print 'Save LMASUB to: ' + SavePath
         print '============================================'
-        self.FindLatestData(ReadinFileLabel)
+        self.find_latest_data(ReadinFileLabel)
         LMASUB_Good = []
         LMASUB_Bad = []
 
@@ -449,9 +438,9 @@ class Extract_VEC:
         print LMASUB_Bad
         return
 
-    def E_S_A_in_two_files(self, readin_filelabel_1, readin_filelabel_2, VEC_anchor1, VEC_anchor2,
-                           E_n_src, S_n_src, A_n_src,
-                           save_path, out_Exact_label, out_Sub_label, out_AMA_label):
+    def exact_sub_ama_in_two_files(self, readin_filelabel_1, readin_filelabel_2, VEC_anchor1, VEC_anchor2,
+                                   E_n_src, S_n_src, A_n_src,
+                                   save_path, out_Exact_label, out_Sub_label, out_AMA_label):
 
         print '======================================'
         print 'Separate Exact Sub AMA from two files:'
@@ -468,7 +457,7 @@ class Extract_VEC:
             file1_read = open(path_and_two_files[0]+'/'+path_and_two_files[1], 'r')
             file2_read = open(path_and_two_files[0]+'/'+path_and_two_files[2], 'r')
 
-            if os.path.isdir(save_path + '/' + conf_folder) == False:
+            if os.path.isdir(save_path + '/' + conf_folder) is False:
                 os.mkdir(save_path + '/' + conf_folder, 0755)
             out_Exact = open(save_path + '/' + conf_folder + '/' + out_Exact_label + '.' + conf_num, 'w')
             out_Sub   = open(save_path + '/' + conf_folder + '/' + out_Sub_label   + '.' + conf_num, 'w')
@@ -495,10 +484,10 @@ class Extract_VEC:
                     sub_num += 1
                 if 'src_global_xyzt:' in file1_line and anchor1_num == 3:
                     ama_num += 1
-                if out_file != None:
+                if out_file is not None:
                     if 'VEC' in file1_line:
                         out_file.write(file1_line)
-                if check_identity1 == None and anchor1_num == 1 and 'VEC' in file1_line:
+                if check_identity1 is None and anchor1_num == 1 and 'VEC' in file1_line:
                     check_identity1 = float(file1_line.split()[10])
             anchor2_num = 0
             out_file = None
@@ -510,10 +499,10 @@ class Extract_VEC:
                         out_file = out_AMA
                 if 'src_global_xyzt:' in file2_line and anchor2_num == 3:
                     ama_num += 1
-                if out_file != None:
+                if out_file is not None:
                     if 'VEC' in file2_line:
                         out_file.write(file2_line)
-                if check_identity2 == None and anchor2_num == 1 and 'VEC' in file2_line:
+                if check_identity2 is None and anchor2_num == 1 and 'VEC' in file2_line:
                     check_identity2 = float(file2_line.split()[10])
 
             out_Exact.close()
@@ -545,12 +534,12 @@ class Extract_VEC:
 
     def run(self):
 
-        '''
+        """
         First check the sizes and the times of 'out-ama' (> 10^7 and newest)
         Read and write 'VEC' lines
         !!Attention Again!!: those 'out-ama' files should contain Exact and Sub and AMA in order (usually 8 & 8 & rest)
         :return: NA
-        '''
+        """
 
         wrong_config = []
         right_config_num = 0
@@ -600,12 +589,12 @@ class Extract_VEC:
 
     def check_Size_Date(self, folder, size):
 
-        '''
+        """
         Check Size and Compare Date of the files under the folder
         :param folder:
         :param size:
         :return: True/False: have/no such file, and give file name if True
-        '''
+        """
 
         conf_num = folder.split(".")[-1]
         filelist = (walkfiles(self.path + '/' + folder, prt=0))[1]
@@ -626,12 +615,12 @@ class Extract_VEC:
 
     def check_Num_Size(self, folder, name):
 
-        '''
+        """
         Check the Number of files named by 'name' under the folder
         :param folder:
         :param name:
         :return:
-        '''
+        """
 
         num1 = 0
         num2 = 0
@@ -654,11 +643,11 @@ class Extract_VEC:
 
     def check_Complete(self, FullFilePath):
 
-        '''
+        """
         Check if the file contain all Exact Sub and AMA values
         BY SIMPLY CHECK THE FIRST TWO 'src_global_xyzt' LINES. ONLY t CHANGE IN FIRST TWO LINES WILL BE ACCEPTED
         :return:
-        '''
+        """
 
         file = open(FullFilePath)
         linenum = 0
@@ -691,11 +680,11 @@ class Extract_VEC:
 
     def run_check_Size_Date_Complete(self):
 
-        '''
+        """
         First check Size_Date_Complete
         Read and write 'VEC' lines
         :return: NA
-        '''
+        """
 
         right_config_num = 0
         NotCompleteList = []
@@ -740,7 +729,7 @@ class Extract_VEC:
 
     def run_Num_Size(self):
 
-        '''
+        """
         First Check the number of the 'out-ama' files
         In l48, there are two situations (actually three, the last one is total no file):
         1. Exact_Sub and AMA are separated (Size of E_S: 10^6-10^7, Size of AMA: >10^7)
@@ -748,7 +737,7 @@ class Extract_VEC:
         2. All of them are in one file (Size: >10^7)
            The same, need to check_Complete()
         :return:
-        '''
+        """
 
         NotCompleteList = []
         for folder in self.folderlist:
@@ -824,11 +813,11 @@ class Extract_VEC:
 
     def Separate_E_S_A(self):
 
-        '''
+        """
         Read in the files that contain all three Exact Sub AMA
         And Write them into three files individually
         :return:
-        '''
+        """
 
         print 'Separate Exact Sub AMA:'
         for folder in self.folderlist:
@@ -869,36 +858,36 @@ class Extract_VEC:
                             print 'wrong config:'
                             print self.path + '/' + folder + '/' + 'vec' + '.' + conf_num
 
-    def Separate_E_S_A_SAVETODIFFFOLDER(self, SavePath, ReadinFileLabel, ExactLabel, SubLabel, AMALabel, MinSize = 0, rewrite = False, OutFileLabel = None):
-        '''
+    def separate_exact_sub_ama(self, save_path, readin_file_label, out_exact_label, out_sub_label, out_ama_label, min_size=0, rewrite=False, out_file_label=None):
+        """
         Read in the lastest file labeled in 'ReadinFileLabel' under each configuration
         Check if the sizes of the files are larger than 'MinSize'
         The files will also be checked if they contain all three Exact Sub AMA
         Write them into three files individually in each configuration under the 'SavePath'
         :rewrite: True/False, rewrite the output file if it has already been exist
-        '''
+        """
 
         print 'Separate Exact Sub AMA:'
 
-        self.FindLatestData(ReadinFileLabel)
+        self.find_latest_data(readin_file_label)
 
         for file in self.FilePathList:
             print 'in the folder:', file
             #check size
-            if os.path.getsize(file) < MinSize:
+            if os.path.getsize(file) < min_size:
                 print 'invalide size:'
                 print file
                 continue
 
             ConfigFolder = file.split("/")[-2]
             conf_num = ConfigFolder.split(".")[-1]
-            if OutFileLabel != None:
-                ConfigFolder = OutFileLabel + '.' + str(conf_num)
+            if out_file_label is None:
+                ConfigFolder = out_file_label + '.' + str(conf_num)
 
-            if rewrite == False:
-                if os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num) == True & \
-                   os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num) == True & \
-                   os.path.isfile(SavePath + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num) == True:
+            if rewrite is False:
+                if os.path.isfile(save_path + '/' + ConfigFolder + '/' + 'vec_Exact' + '.' + conf_num) == True & \
+                   os.path.isfile(save_path + '/' + ConfigFolder + '/' + 'vec_Sub' + '.' + conf_num) == True & \
+                   os.path.isfile(save_path + '/' + ConfigFolder + '/' + 'vec_AMA' + '.' + conf_num) == True:
                     print 'The vec files are already exist'
                     continue
 
@@ -913,28 +902,28 @@ class Extract_VEC:
                     src_linenum.append(LineNum)
             if len(src_linenum) == 3: # Which means the file contain all Exact Sub and AMA
 
-                if os.path.isdir(SavePath + '/' + ConfigFolder) == False:
-                    os.mkdir(SavePath + '/' + ConfigFolder, 0755)
+                if os.path.isdir(save_path + '/' + ConfigFolder) == False:
+                    os.mkdir(save_path + '/' + ConfigFolder, 0755)
                 
-                vec_Exact = open(SavePath + '/' + ConfigFolder + '/' + ExactLabel + '.' + conf_num, 'w')
-                vec_Sub = open(SavePath + '/' + ConfigFolder + '/' + SubLabel + '.' + conf_num, 'w')
-                vec_AMA = open(SavePath + '/' + ConfigFolder + '/' + AMALabel + '.' + conf_num, 'w')
+                vec_Exact = open(save_path + '/' + ConfigFolder + '/' + out_exact_label + '.' + conf_num, 'w')
+                vec_Sub = open(save_path + '/' + ConfigFolder + '/' + out_sub_label + '.' + conf_num, 'w')
+                vec_AMA = open(save_path + '/' + ConfigFolder + '/' + out_ama_label + '.' + conf_num, 'w')
 
                 for n in range(src_linenum[0], src_linenum[1]):
                     if 'VEC' in AllLines[n]:
                         vec_Exact.write(AllLines[n])
                 vec_Exact.close()
-                print 'create ' + SavePath + '/' + ConfigFolder + '/' + ExactLabel + '.' + conf_num
+                print 'create ' + save_path + '/' + ConfigFolder + '/' + out_exact_label + '.' + conf_num
                 for n in range(src_linenum[1], src_linenum[2]):
                     if 'VEC' in AllLines[n]:
                         vec_Sub.write(AllLines[n])
                 vec_Sub.close()
-                print 'create ' + SavePath + '/' + ConfigFolder + '/' + SubLabel + '.' + conf_num
+                print 'create ' + save_path + '/' + ConfigFolder + '/' + out_sub_label + '.' + conf_num
                 for n in range(src_linenum[2], TotalLineNum):
                     if 'VEC' in AllLines[n]:
                         vec_AMA.write(AllLines[n])
                 vec_AMA.close()
-                print 'create ' + SavePath + '/' + ConfigFolder + '/' + AMALabel + '.' + conf_num
+                print 'create ' + save_path + '/' + ConfigFolder + '/' + out_ama_label + '.' + conf_num
                 FileRead.close()
             else:
                 print 'corrupted config:'
@@ -944,7 +933,7 @@ class Extract_VEC:
 
         print 'Extract Exact Sub:'
 
-        self.FindLatestData(readin_file_label)
+        self.find_latest_data(readin_file_label)
         good_configs = []
 
         for file in self.FilePathList:
@@ -1060,15 +1049,15 @@ class Extract_VEC:
     def run_96(self):
         for folder in self.folderlist:
             if (self.config_folder_label in folder) & ('t' in folder):
-                checkES = CheckFiles_By_NumOfSrcGlobal(self.path + '/' + folder, 16)
-                checkAMA = CheckFiles_By_NumOfSrcGlobal(self.path + '/' + folder, 108)
+                checkES = CheckFilesByNumOfSrcGlobal(self.path + '/' + folder, 16)
+                checkAMA = CheckFilesByNumOfSrcGlobal(self.path + '/' + folder, 108)
 
                 if (checkES.num >= 1) & (checkAMA.num >= 1):
 
                     print self.path + '/' + folder + ': ES ' + str(checkES.num) + ' AMA ' + str(checkAMA.num)
 
-                    ESfile = ChooseNewerFile(self.path + '/' + folder, checkES.filename)
-                    AMAfile = ChooseNewerFile(self.path + '/' + folder, checkAMA.filename)
+                    ESfile = choose_newer_file(self.path + '/' + folder, checkES.filename)
+                    AMAfile = choose_newer_file(self.path + '/' + folder, checkAMA.filename)
 
                     conf_num = folder.split(".")[-1]
 
@@ -1109,88 +1098,11 @@ class Extract_VEC:
         for i in range (0, wronglen):
             print self.wrongconfig[i]
 
+
 if __name__ == "__main__":
 
-    '''
-    Mix_96 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l96')
-    Mix_96.run_96()
-    Mix_96.PrtWrongConfig()
-    '''
-
-    '''
-    l64 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l64')
-    l64.run()
-    '''
-
-    '''
-    l48 = Extract_VEC('/Volumes/Seagate Backup Plus Drive/lqcdproj/gMinus2/blum/HISQ/', 'l48')
-    #l48.run_check_Size_Date_Complete()
-    l48.run_Num_Size()
-    l48.Separate_E_S_A()
-    '''
-    '''
-    #l64 = Extract_VEC('/lqcdproj/gMinus2/blum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
-    #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-    #l64 = Extract_VEC('/lqcdproj/Muon/tblum/HISQ', 'l6496f211b630m0012m0363m432-x0-t0-strange')
-    #l64.Separate_E_S_A_SAVETODIFFFOLDER('out-hvp-strange.', 10000000, '/home/ctu/HISQ', True, 'vec_Exact-strange', 'vec_Sub-strange', 'vec_AMA-strange')
-    HISQ_PATH = '/volatile/gMinus2/HISQ'
-    FOLDER_LABEL = 'l6496f211b630m0012m0363m432-reorder-3000Eig'
-    FILE_LABEL = 'out-LMA'
-
-    OUT_PATH = '/home/ctu/HISQ_extract'
-    OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
-    OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
-
-    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-    l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
-    l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
-    '''
-
-    '''
-    HISQ_PATH = '/volatile/gMinus2/HISQ'
-    FOLDER_LABEL = 'l6496f211b630m0012m0363m432-lma'
-    FILE_LABEL = 'out-lma'
-
-    OUT_PATH = '/home/ctu/HISQ_extract/l6496/'
-    OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMA'
-    OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-3000neig-LMASUB'
-
-    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-    l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
-    l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
-    '''
-
-    '''
-    HISQ_PATH = '/volatile/gMinus2/HISQ'
-    FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-lma'
-    FILE_LABEL = 'out-LMA'
-
-    OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
-    OUT_LMA_LABEL = 'l4864f211b600m00184m0507m628a-LMA'
-    OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
-
-    l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-    l48.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
-    l48.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL)
-    '''
-
-    '''
-    HISQ_PATH = '/home/ctu/hvp/'
-    FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
-    FILE_LABEL = 'out-'
-
-    OUT_PATH = '/home/ctu/HISQ_extract/l4864/'
-    OUT_AMA_LABEL = 'l4864f211b600m00184m0507m628a-AMA'
-    OUT_EXACT_LABEL = 'l4864f211b600m00184m0507m628a-EXACT'
-    OUT_SUB_LABEL = 'l4864f211b600m00184m0507m628a-SUB'
-
-    l48 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-    l48.Separate_E_S_A_SAVETODIFFFOLDER(FILE_LABEL, 60000000, OUT_PATH, True, OUT_EXACT_LABEL, OUT_SUB_LABEL, OUT_AMA_LABEL)
-    '''
-
-    '''
     # for l4864 AMA
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l4864/ama'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l4864/ama'
     FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
     IN_FILE_LABEL = 'out-x0.12t0.16'
     FILE_ANCHOR = 'src_global_xyzt: 0 0 0 0'
@@ -1198,31 +1110,27 @@ if __name__ == "__main__":
     S_n_src = 8
     A_n_src = 4 * 4 * 4 * 4
 
-    OUT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
     OUT_EXACT = 'l4864f211b600m00184m0507m628a-Exact'
-    OUT_SUB   = 'l4864f211b600m00184m0507m628a-Sub'
-    OUT_AMA   = 'l4864f211b600m00184m0507m628a-AMA'
+    OUT_SUB = 'l4864f211b600m00184m0507m628a-Sub'
+    OUT_AMA = 'l4864f211b600m00184m0507m628a-AMA'
 
-    l48_ama = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-    l48_ama.Separate_E_S_A_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_EXACT, OUT_SUB, OUT_AMA)
-    '''
+    l48_ama = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
+    l48_ama.separate_exact_sub_ama(OUT_PATH, IN_FILE_LABEL, OUT_EXACT, OUT_SUB, OUT_AMA)
 
-    '''
     # for l4864 LMA
-    HISQ_PATH        = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l4864/lma'
-    FOLDER_LABEL     = 'l4864f211b600m00184m0507m628a-lma'
-    IN_FILE_LABEL    = 'out-LMA'
-    OUT_PATH         = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
-    OUT_LMA_LABEL    = 'l4864f211b600m00184m0507m628a-LMA'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l4864/lma'
+    FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-lma'
+    IN_FILE_LABEL = 'out-LMA'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
+    OUT_LMA_LABEL = 'l4864f211b600m00184m0507m628a-LMA'
     OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
 
-    l48_lma = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l48_lma = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l48_lma.LMA_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_LMA_LABEL)
     LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 12 tstart 0 tinc 16) Start'
     l48_lma.LMASUB_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
-    '''
 
-    '''
     # for l96 AMA
     HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l96192'
     FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
@@ -1239,7 +1147,7 @@ if __name__ == "__main__":
     OUT_SUB   = 'l96192f211b672m0008m022m260a-Sub'
     OUT_AMA   = 'l96192f211b672m0008m022m260a-AMA'
 
-    l96_ama = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l96_ama = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l96_ama.extract_exact_sub(IN_E_S_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL)
     l96_ama.extract_ama_in_two_files(IN_AMA_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL, num_src = A_n_src)
 
@@ -1253,10 +1161,9 @@ if __name__ == "__main__":
     OUT_LMA_LABEL = 'l96192f211b672m0008m022m260a-LMA'
     OUT_LMASUB_LABEL = 'l96192f211b672m0008m022m260a-LMASUB'
 
-    l96 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l96 = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l96.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
     l96.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
-    '''
 
     # for l64 AMA
     HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l6496'
@@ -1274,10 +1181,9 @@ if __name__ == "__main__":
     OUT_SUB = 'l6496f211b630m0012m0363m432-Sub'
     OUT_AMA = 'l6496f211b630m0012m0363m432-AMA'
 
-    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
-    l64.E_S_A_in_two_files(IN_FILE_LABEL1, IN_FILE_LABEL2, FILE_ANCHOR1, FILE_ANCHOR2, E_n_src, S_n_src, A_n_src, OUT_PATH, OUT_EXACT, OUT_SUB, OUT_AMA)
+    l64 = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
+    l64.exact_sub_ama_in_two_files(IN_FILE_LABEL1, IN_FILE_LABEL2, FILE_ANCHOR1, FILE_ANCHOR2, E_n_src, S_n_src, A_n_src, OUT_PATH, OUT_EXACT, OUT_SUB, OUT_AMA)
 
-    '''
     # for l64 lma
     HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l6496'
     FOLDER_LABEL = 'l6496f211b630m0012m0363m432'
@@ -1288,12 +1194,11 @@ if __name__ == "__main__":
     OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-LMA'
     OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-LMASUB'
 
-    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64 = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
     l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
 
     FILE_LABEL = 'out-lma'
-    l64 = Extract_VEC(HISQ_PATH, FOLDER_LABEL)
+    l64 = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
     l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
-    '''
