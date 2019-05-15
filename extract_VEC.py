@@ -870,7 +870,7 @@ class ExtractVEC:
         print 'Separate Exact Sub AMA:'
 
         self.find_latest_data(readin_file_label)
-
+        good_configs = []
         for file in self.FilePathList:
             print 'in the folder:', file
             #check size
@@ -881,7 +881,7 @@ class ExtractVEC:
 
             ConfigFolder = file.split("/")[-2]
             conf_num = ConfigFolder.split(".")[-1]
-            if out_file_label is None:
+            if out_file_label is not None:
                 ConfigFolder = out_file_label + '.' + str(conf_num)
 
             if rewrite is False:
@@ -895,12 +895,12 @@ class ExtractVEC:
             AllLines = FileRead.readlines()
             TotalLineNum = len(AllLines)
             LineNum = -1
-            src_linenum = [] # The line number of the line with 'src_global_xyzt: 0 0 0 0'
+            src_linenum = []  # The line number of the line with 'src_global_xyzt: 0 0 0 0'
             for lines in AllLines:
                 LineNum += 1
                 if 'src_global_xyzt: 0 0 0 0' in lines:
                     src_linenum.append(LineNum)
-            if len(src_linenum) == 3: # Which means the file contain all Exact Sub and AMA
+            if len(src_linenum) == 3:  # Which means the file contain all Exact Sub and AMA
 
                 if os.path.isdir(save_path + '/' + ConfigFolder) == False:
                     os.mkdir(save_path + '/' + ConfigFolder, 0755)
@@ -925,9 +925,13 @@ class ExtractVEC:
                 vec_AMA.close()
                 print 'create ' + save_path + '/' + ConfigFolder + '/' + out_ama_label + '.' + conf_num
                 FileRead.close()
+                good_configs.append(conf_num)
             else:
                 print 'corrupted config:'
                 print self.path + '/' + ConfigFolder + '/' + 'vec' + '.' + conf_num
+        print str(len(good_configs)), 'Exact and Sub Have Been Extracted To', save_path, ':'
+        print sorted(good_configs)
+        return
 
     def extract_exact_sub(self, readin_file_label, save_path, out_folder_label, out_file_label, min_size = 0):
 
@@ -992,7 +996,7 @@ class ExtractVEC:
                 print file
                 print
         print str(len(good_configs)), 'Exact and Sub Have Been Extracted To', save_path, ':'
-        print good_configs
+        print sorted(good_configs)
         return
 
     def extract_ama_in_two_files(self, readin_file_label, save_path, out_folder_label, out_file_label, num_src = None):
@@ -1043,7 +1047,7 @@ class ExtractVEC:
                 print 'Create:', ama_file
                 good_configs.append(conf_num)
         print str(len(good_configs)), 'AMA Have Been Extracted To', save_path, ':'
-        print good_configs
+        print sorted(good_configs)
         return
 
     def run_96(self):
@@ -1101,6 +1105,11 @@ class ExtractVEC:
 
 if __name__ == "__main__":
 
+    '''
+    # ==================================================================================================================
+    # l4864 AMA + LMA
+    # ==================================================================================================================
+
     # for l4864 AMA
     HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l4864/ama'
     FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-ama'
@@ -1110,7 +1119,7 @@ if __name__ == "__main__":
     S_n_src = 8
     A_n_src = 4 * 4 * 4 * 4
 
-    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l48c64/'
     OUT_EXACT = 'l4864f211b600m00184m0507m628a-Exact'
     OUT_SUB = 'l4864f211b600m00184m0507m628a-Sub'
     OUT_AMA = 'l4864f211b600m00184m0507m628a-AMA'
@@ -1119,10 +1128,10 @@ if __name__ == "__main__":
     l48_ama.separate_exact_sub_ama(OUT_PATH, IN_FILE_LABEL, OUT_EXACT, OUT_SUB, OUT_AMA)
 
     # for l4864 LMA
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l4864/lma'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l4864/lma'
     FOLDER_LABEL = 'l4864f211b600m00184m0507m628a-lma'
     IN_FILE_LABEL = 'out-LMA'
-    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l48c64/'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l48c64/'
     OUT_LMA_LABEL = 'l4864f211b600m00184m0507m628a-LMA'
     OUT_LMASUB_LABEL = 'l4864f211b600m00184m0507m628a-LMASUB'
 
@@ -1131,8 +1140,15 @@ if __name__ == "__main__":
     LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 12 tstart 0 tinc 16) Start'
     l48_lma.LMASUB_SAVETODIFFFOLDER(OUT_PATH, IN_FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
 
+    exit()
+    '''
+
+    # ==================================================================================================================
+    # l96 AMA + LMA
+    # ==================================================================================================================
+
     # for l96 AMA
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l96192'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l96192'
     FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
     IN_E_S_FILE_LABEL = 'out-exact-sub'
     IN_AMA_FILE_LABEL = 'out-sloppy'
@@ -1140,7 +1156,7 @@ if __name__ == "__main__":
     S_n_src = 8
     A_n_src = 3 * 3 * 3 * 4 * 2
 
-    OUT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l96c192/'
+    OUT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l96c192/'
     OUT_FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
     OUT_FILE_LABEL = FOLDER_LABEL
     OUT_EXACT = 'l96192f211b672m0008m022m260a-Exact'
@@ -1149,15 +1165,15 @@ if __name__ == "__main__":
 
     l96_ama = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l96_ama.extract_exact_sub(IN_E_S_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL)
-    l96_ama.extract_ama_in_two_files(IN_AMA_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL, num_src = A_n_src)
+    l96_ama.extract_ama_in_two_files(IN_AMA_FILE_LABEL, OUT_PATH, OUT_FOLDER_LABEL, OUT_FILE_LABEL, num_src=A_n_src)
 
     # for l96 LMA
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l96192'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l96192'
     FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
     FILE_LABEL = 'out-LMA'
     LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 32 tstart 0 tinc 48) and (start2 16 inc2 32 tstart2 24 tinc2 48)'
 
-    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l96c192/'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l96c192/'
     OUT_LMA_LABEL = 'l96192f211b672m0008m022m260a-LMA'
     OUT_LMASUB_LABEL = 'l96192f211b672m0008m022m260a-LMASUB'
 
@@ -1165,8 +1181,15 @@ if __name__ == "__main__":
     l96.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
     l96.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
 
+    exit()
+
+    '''
+    # ==================================================================================================================
+    # l64 AMA + LMA
+    # ==================================================================================================================
+
     # for l64 AMA
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l6496'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l6496'
     FOLDER_LABEL = 'l6496f211b630m0012m0363m432'
     IN_FILE_LABEL1 = 'out-x0.16t0.48'
     IN_FILE_LABEL2 = 'out-x0.16t24.48'
@@ -1176,7 +1199,7 @@ if __name__ == "__main__":
     S_n_src = 8
     A_n_src = 256
 
-    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l64c96/'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l64c96/'
     OUT_EXACT = 'l6496f211b630m0012m0363m432-Exact'
     OUT_SUB = 'l6496f211b630m0012m0363m432-Sub'
     OUT_AMA = 'l6496f211b630m0012m0363m432-AMA'
@@ -1185,12 +1208,12 @@ if __name__ == "__main__":
     l64.exact_sub_ama_in_two_files(IN_FILE_LABEL1, IN_FILE_LABEL2, FILE_ANCHOR1, FILE_ANCHOR2, E_n_src, S_n_src, A_n_src, OUT_PATH, OUT_EXACT, OUT_SUB, OUT_AMA)
 
     # for l64 lma
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_raw/l6496'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_raw/l6496'
     FOLDER_LABEL = 'l6496f211b630m0012m0363m432'
     FILE_LABEL = 'out-LMA'
     LMASUB_VacPolLabel = 'VacPol from Selected Sourses (start 0 inc 16 tstart 0 tinc 24) Start'
 
-    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l64c96/'
+    OUT_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l64c96/'
     OUT_LMA_LABEL = 'l6496f211b630m0012m0363m432-LMA'
     OUT_LMASUB_LABEL = 'l6496f211b630m0012m0363m432-LMASUB'
 
@@ -1202,3 +1225,4 @@ if __name__ == "__main__":
     l64 = ExtractVEC(HISQ_PATH, FOLDER_LABEL)
     l64.LMA_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMA_LABEL)
     l64.LMASUB_SAVETODIFFFOLDER(OUT_PATH, FILE_LABEL, OUT_LMASUB_LABEL, LMASUB_VacPolLabel)
+    '''

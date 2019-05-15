@@ -1,6 +1,8 @@
 __author__ = 'SereneTu'
 
 import numpy as np
+import sys
+sys.path.append('/Users/tucheng/Desktop/Physics/research/qcdlib-python/qcdlib')
 # import sympy as sympy
 from scipy.optimize import minimize
 # from sympy import *
@@ -11,9 +13,9 @@ import matplotlib.pyplot as plt
 import random
 import copy
 import math
-import sys
 import src.func
 import os
+import jackknife as jk
 
 # ????????????
 def order_by_Column(matrix, column):
@@ -770,7 +772,7 @@ class DoEnsemble:
         self.L_config_list = self.read_L.config_list
         print '========================================================================================================'
         print 'Read LMA Config List'
-        print self.read_L.config_list
+        print sorted(self.read_L.config_list)
         print len(self.read_L.config_list), 'configurations'
         print '========================================================================================================'
 
@@ -786,7 +788,7 @@ class DoEnsemble:
         self.LS_config_list = self.read_LS.config_list
         print '========================================================================================================'
         print 'Read LMASUB Config List'
-        print self.read_LS.config_list
+        print sorted(self.read_LS.config_list)
         print len(self.read_LS.config_list), 'configurations'
         print '========================================================================================================'
 
@@ -798,8 +800,8 @@ class DoEnsemble:
         self.E_cmunu_config_dic = self.read_E.cmunu_config_dic
         self.E_config_list = self.read_E.config_list
         print '========================================================================================================'
-        print 'Read Exact Config List'
-        print self.read_E.config_list
+        print 'Read Exact Config List: ' + str(len(self.read_E.config_list))
+        print sorted(self.read_E.config_list)
         print '========================================================================================================'
         return
 
@@ -809,8 +811,8 @@ class DoEnsemble:
         self.ES_cmunu_config_dic = self.read_ES.cmunu_config_dic
         self.ES_config_list = self.read_ES.config_list
         print '========================================================================================================'
-        print 'Read Sub Config List'
-        print self.read_ES.config_list
+        print 'Read Sub Config List: ' + str(len(self.read_ES.config_list))
+        print sorted(self.read_ES.config_list)
         print '========================================================================================================'
         return
 
@@ -820,9 +822,79 @@ class DoEnsemble:
         self.A_cmunu_config_dic = self.read_A.cmunu_config_dic
         self.A_config_list = self.read_A.config_list
         print '========================================================================================================'
-        print 'Read AMA Config List'
-        print self.read_A.config_list
+        print 'Read AMA Config List: ' + str(len(self.read_A.config_list))
+        print sorted(self.read_A.config_list)
         print '========================================================================================================'
+        return
+
+    def compute_jk_exact(self, config_list='All'):
+        if config_list == 'All':
+            print('Compute Exact jk: ' + str(len(self.E_cmunu_config_dic)))
+            print(sorted(self.E_cmunu_config_dic.keys()))
+            self.exact_cmunu_jk_dict = jk.make_jackknife_dic(self.E_cmunu_config_dic)
+        else:
+            print('Compute Exact jk: ' + str(len(config_list)))
+            print(sorted(config_list))
+            temp_dict = {}
+            for config in config_list:
+                temp_dict[config] = self.E_cmunu_config_dic[config]
+            self.exact_cmunu_jk_dict = jk.make_jackknife_dic(temp_dict)
+        return
+
+    def compute_jk_sub(self, config_list='All'):
+        if config_list == 'All':
+            print('Compute Sub jk: ' + str(len(self.ES_cmunu_config_dic)))
+            print(sorted(self.ES_cmunu_config_dic.keys()))
+            self.sub_cmunu_jk_dict = jk.make_jackknife_dic(self.ES_cmunu_config_dic)
+        else:
+            print('Compute Sub jk: ' + str(len(config_list)))
+            print(sorted(config_list))
+            temp_dict = {}
+            for config in config_list:
+                temp_dict[config] = self.ES_cmunu_config_dic[config]
+            self.sub_cmunu_jk_dict = jk.make_jackknife_dic(temp_dict)
+        return
+
+    def compute_jk_ama(self, config_list='All'):
+        if config_list == 'All':
+            print('Compute AMA jk: ' + str(len(self.A_cmunu_config_dic)))
+            print(sorted(self.A_cmunu_config_dic.keys()))
+            self.ama_cmunu_jk_dict = jk.make_jackknife_dic(self.A_cmunu_config_dic)
+        else:
+            print('Compute AMA jk: ' + str(len(config_list)))
+            print(sorted(config_list))
+            temp_dict = {}
+            for config in config_list:
+                temp_dict[config] = self.A_cmunu_config_dic[config]
+            self.ama_cmunu_jk_dict = jk.make_jackknife_dic(temp_dict)
+        return
+
+    def compute_jk_lmasub(self, config_list='All'):
+        if config_list == 'All':
+            print('Compute LMA Sub jk: ' + str(len(self.LS_cmunu_config_dic)))
+            print(sorted(self.LS_cmunu_config_dic.keys()))
+            self.lmasub_cmunu_jk_dict = jk.make_jackknife_dic(self.LS_cmunu_config_dic)
+        else:
+            print('Compute LMA Sub jk: ' + str(len(config_list)))
+            print(sorted(config_list))
+            temp_dict = {}
+            for config in config_list:
+                temp_dict[config] = self.LS_cmunu_config_dic[config]
+            self.lmasub_cmunu_jk_dict = jk.make_jackknife_dic(temp_dict)
+        return
+
+    def compute_jk_lma(self, config_list='All'):
+        if config_list == 'All':
+            print('Compute LMA jk: ' + str(len(self.L_cmunu_config_dic)))
+            print(sorted(self.L_cmunu_config_dic.keys()))
+            self.lma_cmunu_jk_dict = jk.make_jackknife_dic(self.L_cmunu_config_dic)
+        else:
+            print('Compute LMA jk: ' + str(len(config_list)))
+            print(sorted(config_list))
+            temp_dict = {}
+            for config in config_list:
+                temp_dict[config] = self.L_cmunu_config_dic[config]
+            self.lma_cmunu_jk_dict = jk.make_jackknife_dic(temp_dict)
         return
 
     def extend_avg_to_Exact(self, list_of_config_to_avg, list_of_config_to_extend):
@@ -870,6 +942,42 @@ class DoEnsemble:
             self.L_cmunu_config_dic[config] = res[:]
         return
 
+    def extend_avg_to_exact_jk(self, list_of_config_to_avg, list_of_config_to_extend):
+        res = np.zeros(self.L[3])
+        for key in list_of_config_to_avg:
+            res += np.array(self.E_cmunu_config_dic[key])
+        res /= len(list_of_config_to_avg)
+        for config in list_of_config_to_extend:
+            self.exact_cmunu_jk_dict[config] = res[:]
+        return
+
+    def extend_avg_to_sub_jk(self, list_of_config_to_avg, list_of_config_to_extend):
+        res = np.zeros(self.L[3])
+        for key in list_of_config_to_avg:
+            res += np.array(self.ES_cmunu_config_dic[key])
+        res /= len(list_of_config_to_avg)
+        for config in list_of_config_to_extend:
+            self.sub_cmunu_jk_dict[config] = res[:]
+        return
+
+    def extend_avg_to_ama_jk(self, list_of_config_to_avg, list_of_config_to_extend):
+        res = np.zeros(self.L[3])
+        for key in list_of_config_to_avg:
+            res += np.array(self.A_cmunu_config_dic[key])
+        res /= len(list_of_config_to_avg)
+        for config in list_of_config_to_extend:
+            self.ama_cmunu_jk_dict[config] = res[:]
+        return
+
+    def extend_avg_to_lmasub_jk(self, list_of_config_to_avg, list_of_config_to_extend):
+        res = np.zeros(self.L[3])
+        for key in list_of_config_to_avg:
+            res += np.array(self.LS_cmunu_config_dic[key])
+        res /= len(list_of_config_to_avg)
+        for config in list_of_config_to_extend:
+            self.lmasub_cmunu_jk_dict[config] = res[:]
+        return
+
     def read_allconfig_Exact_Sub_AMA_LMASUB_LMA(self, Ename, ESname, Aname, Lname, LSname):
 
         self.read_allconfig_Exact(Ename)
@@ -877,53 +985,6 @@ class DoEnsemble:
         self.read_allconfig_AMA(Aname)
         self.read_allconfig_LMA(Lname)
         self.read_allconfig_LMASUB(LSname)
-
-        '''
-        self.read_E = ReadCorrelationFunction(self.path, Ename, self.L, 'TimeSlice')
-        self.read_E.read_allconfig_samemu('VEC-CORRt')
-        self.E_cmunu_config_dic = self.read_E.cmunu_config_dic
-        print '========================================================================================================'
-        print 'Read Exact Config List'
-        print self.read_E.config_list
-        print '========================================================================================================'
-
-        self.read_ES = ReadCorrelationFunction(self.path, ESname, self.L, 'TimeSlice')
-        self.read_ES.read_allconfig_samemu('VEC-CORRt')
-        self.ES_cmunu_config_dic = self.read_ES.cmunu_config_dic
-        print '========================================================================================================'
-        print 'Read Sub Config List'
-        print self.read_ES.config_list
-        print '========================================================================================================'
-
-        self.read_A = ReadCorrelationFunction(self.path, Aname, self.L, 'TimeSlice')
-        self.read_A.read_allconfig_samemu('VEC-CORRt')
-        self.A_cmunu_config_dic = self.read_A.cmunu_config_dic
-        print '========================================================================================================'
-        print 'Read AMA Config List'
-        print self.read_A.config_list
-        print '========================================================================================================'
-
-        self.read_L = ReadCorrelationFunction(self.path, Lname, self.L, 'TimeSlice')
-        self.read_L.read_allconfig_samemu('VEC-CORRt')
-        for i in self.read_L.cmunu_config_dic:
-            self.read_L.cmunu_config_dic[i] = self.read_L.cmunu_config_dic[i] / self.Vol
-        self.L_cmunu_config_dic = self.read_L.cmunu_config_dic
-        print '========================================================================================================'
-        print 'Read LMA Config List'
-        print self.read_L.config_list
-        print '========================================================================================================'
-
-        self.read_LS = ReadCorrelationFunction(self.path, LSname, self.L, 'TimeSlice')
-        self.read_LS.read_allconfig_samemu('VEC-CORRt')
-        for i in self.read_LS.cmunu_config_dic:
-            self.read_LS.cmunu_config_dic[i] = self.read_LS.cmunu_config_dic[i] / self.numPointSrc
-        self.LS_cmunu_config_dic = self.read_LS.cmunu_config_dic
-        print '========================================================================================================'
-        print 'Read LMASUB Config List'
-        print self.read_LS.config_list
-        print '========================================================================================================'
-        '''
-
         return
 
     def read_allconfig_Exact_Sub_AMA(self, Ename, ESname, Aname):
@@ -986,6 +1047,20 @@ class DoEnsemble:
             for i in config_list:
                 self.cmunu_config_subtract_dic[i] = (  self.L_cmunu_config_dic[i])
 
+        return
+
+    def cmunu_jk_subtract(self, config_list, type):
+
+        print 'Cmunu jk Subtraction with Type:', type
+        print 'Cmunu jk Subtraction Configuration List:', len(config_list), sorted(config_list)
+        self.cmunu_jk_subtract_dict = {}
+        if type == 'Exact Sub AMA LMASUB LMA':
+            for i in config_list:
+                self.cmunu_jk_subtract_dict[i] = (self.exact_cmunu_jk_dict[i]
+                                                  - self.sub_cmunu_jk_dict[i]
+                                                  + self.ama_cmunu_jk_dict[i]
+                                                  - self.lmasub_cmunu_jk_dict[i]
+                                                  + self.lma_cmunu_jk_dict[i])
         return
 
     def cmunu_avg(self, config_list, cmunu_config_dic):
@@ -2220,12 +2295,11 @@ if __name__ == "__main__":
     l48_cmunu.write_cmunu(l48_cmunu.LS_cmunu_config_dic, CMUNU_LMASUB_PATH)
     '''
 
-    '''
     # -------------------------------------------
     # l96 Make Cmunu
     # -------------------------------------------
 
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l96c192/'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l96c192/'
     FOLDER_LABEL = 'l96192f211b672m0008m022m260a'
 
     LMA_LABEL    = 'l96192f211b672m0008m022m260a-LMA'
@@ -2243,11 +2317,11 @@ if __name__ == "__main__":
     l96_cmunu.read_allconfig_AMA(AMA_LABEL)
 
     # Set Up Output
-    CMUNU_LMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l96192/l96_LMA_cmunu'
-    CMUNU_LMASUB_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l96192/l96_LMASUB_cmunu'
-    CMUNU_EXACT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l96192/l96_Exact_cmunu'
-    CMUNU_SUB_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l96192/l96_Sub_cmunu'
-    CMUNU_AMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l96192/l96_AMA_cmunu'
+    CMUNU_LMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l96192/l96_LMA_cmunu'
+    CMUNU_LMASUB_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l96192/l96_LMASUB_cmunu'
+    CMUNU_EXACT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l96192/l96_Exact_cmunu'
+    CMUNU_SUB_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l96192/l96_Sub_cmunu'
+    CMUNU_AMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l96192/l96_AMA_cmunu'
 
     # Write Cmunu
     l96_cmunu.write_cmunu(l96_cmunu.L_cmunu_config_dic , CMUNU_LMA_PATH)
@@ -2260,14 +2334,14 @@ if __name__ == "__main__":
     #for config, cmunu in l96_cmunu.L_cmunu_config_dic.items():
         #l96_cmunu.plot_cmumu_t(cmunu)
     #plt.show()
-    '''
 
+    '''
     # =======================
     # l6496 Make Cmunu
     # =======================
 
     # Set Up Input
-    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_extract/l64c96/'
+    HISQ_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_extract/l64c96/'
 
     LMA_FILE_LABEL    = 'l6496f211b630m0012m0363m432-LMA'
     LMASUB_FILE_LABEL = 'l6496f211b630m0012m0363m432-LMASUB'
@@ -2276,11 +2350,11 @@ if __name__ == "__main__":
     AMA_FILE_LABEL    = 'l6496f211b630m0012m0363m432-AMA'
 
     # Set Up Output
-    CMUNU_EXACT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l6496/l64_Exact_cmunu'
-    CMUNU_SUB_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l6496/l64_Sub_cmunu'
-    CMUNU_AMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l6496/l64_AMA_cmunu'
-    CMUNU_LMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l6496/l64_LMA_cmunu'
-    CMUNU_LMASUB_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/HISQ_cmunu/l6496/l64_LMASUB_cmunu'
+    CMUNU_EXACT_PATH  = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l6496/l64_Exact_cmunu'
+    CMUNU_SUB_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l6496/l64_Sub_cmunu'
+    CMUNU_AMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l6496/l64_AMA_cmunu'
+    CMUNU_LMA_PATH    = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l6496/l64_LMA_cmunu'
+    CMUNU_LMASUB_PATH = '/Users/tucheng/Desktop/Physics/research/hvp/analysis/data/HISQ_cmunu/l6496/l64_LMASUB_cmunu'
 
     # Read All Configuration
     l64_cmunu = Do6496(HISQ_PATH)
@@ -2297,4 +2371,5 @@ if __name__ == "__main__":
     l64_cmunu.write_cmunu(l64_cmunu.A_cmunu_config_dic , CMUNU_AMA_PATH)
     l64_cmunu.write_cmunu(l64_cmunu.L_cmunu_config_dic , CMUNU_LMA_PATH)
     l64_cmunu.write_cmunu(l64_cmunu.LS_cmunu_config_dic, CMUNU_LMASUB_PATH)
+    '''
 
